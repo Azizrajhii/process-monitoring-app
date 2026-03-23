@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "kill-port 5001 && nodemon src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "seed:dashboard": "node scripts/seed-dashboard.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -23,6 +23,10 @@ const userSchema = new mongoose.Schema(
       enum: ['operator', 'quality', 'manager'],
       default: 'operator',
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
     resetPasswordToken: {
       type: String,
     },

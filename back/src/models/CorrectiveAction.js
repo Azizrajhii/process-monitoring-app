@@ -1,32 +1,31 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
-const correctiveActionSchema = new mongoose.Schema({
-
-  alert: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Alert",
-    required: true
+const correctiveActionSchema = new mongoose.Schema(
+  {
+    alert: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Alert',
+      required: true,
+    },
+    description: {
+      type: String,
+      required: true,
+    },
+    responsible: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    result: {
+      type: String,
+    },
+    date: {
+      type: Date,
+      default: Date.now,
+    },
   },
-
-  description: {
-    type: String,
-    required: true
+  {
+    timestamps: true,
   },
+);
 
-  responsible: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  },
-
-  result: {
-    type: String
-  },
-
-  date: {
-    type: Date,
-    default: Date.now
-  }
-
-});
-
-module.exports = mongoose.model("CorrectiveAction", correctiveActionSchema);
+export default mongoose.model('CorrectiveAction', correctiveActionSchema);

@@ -18,6 +18,8 @@ import ColorModeSelect from '../../theme/ColorModeSelect';
 import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../CustomIcons';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/http';
+import { useAuth } from '../../context/AuthContext';
+import { ensureFacebookSdk, ensureGoogleSdk } from '../../utils/oauthSdk';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -63,6 +65,7 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
 
 export default function SignUp(props: { disableCustomTheme?: boolean }) {
   const navigate = useNavigate();
+  const { login, loginWithGoogle, loginWithFacebook } = useAuth();
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
@@ -71,6 +74,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
   const [nameErrorMessage, setNameErrorMessage] = React.useState('');
   const [serverError, setServerError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
+  const [oauthLoading, setOAuthLoading] = React.useState(false);
 
   const validateInputs = () => {
     const email = document.getElementById('email') as HTMLInputElement;
@@ -118,17 +122,164 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     setLoading(true);
 
     try {
+      const email = String(data.get('email') || '');
+      const password = String(data.get('password') || '');
+
       await api.post('/auth/register', {
         fullName: data.get('name'),
-        email: data.get('email'),
-        password: data.get('password'),
+        email,
+        password,
       });
+
+      // Keep one auth source of truth through AuthContext
+      await login(email, password);
       navigate('/');
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Erreur lors de l\'inscription.';
       setServerError(msg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      setOAuthLoading(true);
+      setServerError('');
+
+      await ensureGoogleSdk();
+
+      const google = (window as any).google;
+      if (!google) {
+        setServerError('Google SDK non charge. Rechargez la page.');
+        return;
+      }
+
+      const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+      if (!googleClientId || googleClientId === 'YOUR_GOOGLE_CLIENT_ID') {
+        setServerError('Configurez VITE_GOOGLE_CLIENT_ID dans client/.env puis redemarrez le frontend.');
+        return;
+      }
+
+      await new Promise<void>((resolve) => {
+        const tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: googleClientId,
+          scope: 'openid email profile',
+          callback: async (tokenResponse: any) => {
+            try {
+              if (tokenResponse?.error) {
+                const origin = window.location.origin;
+                if (tokenResponse.error === 'invalid_client') {
+                  setServerError(`Client Google invalide pour l'origine ${origin}. Ajoutez cette origine dans Google Cloud Console > OAuth 2.0 Client IDs > Authorized JavaScript origins.`);
+                } else {
+                  setServerError(`Google Sign-In indisponible: ${tokenResponse.error}.`);
+                }
+                resolve();
+                return;
+              }
+
+              const accessToken = tokenResponse?.access_token;
+              if (!accessToken) {
+                setServerError('Aucun jeton Google recu. Verifiez la configuration OAuth du client web.');
+                resolve();
+                return;
+              }
+
+              const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+              });
+
+              if (!profileResponse.ok) {
+                setServerError('Impossible de recuperer le profil Google.');
+                resolve();
+                return;
+              }
+
+              const profile = (await profileResponse.json()) as {
+                sub?: string;
+                email?: string;
+                name?: string;
+              };
+
+              if (!profile?.sub || !profile?.email) {
+                setServerError('Donnees Google invalides. Verifiez les scopes et la configuration OAuth.');
+                resolve();
+                return;
+              }
+
+              await loginWithGoogle(profile.sub, profile.email, profile.name || profile.email);
+              navigate('/');
+            } catch (err: any) {
+              setServerError(err?.response?.data?.message || 'Erreur lors de l\'inscription Google.');
+            } finally {
+              resolve();
+            }
+          },
+          error_callback: (oauthError: any) => {
+            const reason = oauthError?.type || oauthError?.message || 'unknown_reason';
+            setServerError(`Google Sign-In indisponible: ${reason}.`);
+            resolve();
+          },
+        });
+
+        tokenClient.requestAccessToken({ prompt: 'consent' });
+      });
+    } catch (_err: any) {
+      setServerError('Erreur lors de l\'inscription Google.');
+    } finally {
+      setOAuthLoading(false);
+    }
+  };
+
+  const handleFacebookSignUp = async () => {
+    try {
+      setOAuthLoading(true);
+      setServerError('');
+
+      await ensureFacebookSdk();
+
+      const fb = (window as any).FB;
+      if (!fb) {
+        setServerError('Facebook SDK non charge. Rechargez la page.');
+        return;
+      }
+
+      const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID;
+      if (!facebookAppId || facebookAppId === 'YOUR_FACEBOOK_APP_ID') {
+        setServerError('Configurez VITE_FACEBOOK_APP_ID dans client/.env puis redemarrez le frontend.');
+        return;
+      }
+
+      fb.init({
+        appId: facebookAppId,
+        cookie: true,
+        xfbml: true,
+        version: 'v18.0',
+      });
+
+      fb.login(
+        async (response: any) => {
+          if (response.status === 'connected') {
+            fb.api('/me', { fields: 'id,name,email' }, async (userInfo: any) => {
+              try {
+                await loginWithFacebook(userInfo.id, userInfo.email, userInfo.name);
+                navigate('/');
+              } catch (err: any) {
+                setServerError(err?.response?.data?.message || 'Erreur lors de l\'inscription Facebook.');
+              }
+            });
+          } else {
+            setServerError('Connexion Facebook annulee.');
+          }
+        },
+        { scope: 'public_profile,email' },
+      );
+    } catch (_err: any) {
+      setServerError('Erreur lors de l\'inscription Facebook.');
+    } finally {
+      setOAuthLoading(false);
     }
   };
 
@@ -221,18 +372,20 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign up with Google')}
+              onClick={handleGoogleSignUp}
+              disabled={oauthLoading}
               startIcon={<GoogleIcon />}
             >
-              Sign up with Google
+              {oauthLoading ? 'Connexion...' : 'Sign up with Google'}
             </Button>
             <Button
               fullWidth
               variant="outlined"
-              onClick={() => alert('Sign up with Facebook')}
+              onClick={handleFacebookSignUp}
+              disabled={oauthLoading}
               startIcon={<FacebookIcon />}
             >
-              Sign up with Facebook
+              {oauthLoading ? 'Connexion...' : 'Sign up with Facebook'}
             </Button>
             <Typography sx={{ textAlign: 'center' }}>
               Already have an account?{' '}

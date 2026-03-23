@@ -232,3 +232,196 @@ export const resetPassword = async (req, res, next) => {
     return next(error);
   }
 };
+
+// ─── User management (manager only) ───────────────────────────────────────────
+
+const ALLOWED_ROLES = ['operator', 'quality', 'manager'];
+
+export const getUserById = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable.' });
+    }
+    return res.status(200).json({ success: true, user });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const createUser = async (req, res, next) => {
+  try {
+    const { fullName, email, password, role } = req.body;
+
+    if (!fullName || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'fullName, email et password sont requis.',
+      });
+    }
+
+    if (role && !ALLOWED_ROLES.includes(role)) {
+      return res.status(400).json({ success: false, message: 'Rôle invalide.' });
+    }
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: 'Un utilisateur avec cet email existe déjà.',
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      fullName,
+      email,
+      password: hashedPassword,
+      role: role || 'operator',
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Utilisateur créé avec succès.',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateUser = async (req, res, next) => {
+  try {
+    const { fullName, role, isActive } = req.body;
+
+    if (role && !ALLOWED_ROLES.includes(role)) {
+      return res.status(400).json({ success: false, message: 'Rôle invalide.' });
+    }
+
+    // Prevent manager from deactivating or demoting themselves
+    if (req.params.id === String(req.user._id)) {
+      if (isActive === false) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vous ne pouvez pas désactiver votre propre compte.',
+        });
+      }
+      if (role && role !== req.user.role) {
+        return res.status(400).json({
+          success: false,
+          message: 'Vous ne pouvez pas modifier votre propre rôle.',
+        });
+      }
+    }
+
+    const updates = {};
+    if (fullName !== undefined) updates.fullName = fullName;
+    if (role !== undefined) updates.role = role;
+    if (isActive !== undefined) updates.isActive = isActive;
+
+    const user = await User.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+      runValidators: true,
+    }).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable.' });
+    }
+
+    return res.status(200).json({ success: true, message: 'Utilisateur mis à jour.', user });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deleteUser = async (req, res, next) => {
+  try {
+    if (req.params.id === String(req.user._id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vous ne pouvez pas supprimer votre propre compte.',
+      });
+    }
+
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'Utilisateur introuvable.' });
+    }
+
+    return res.status(200).json({ success: true, message: 'Utilisateur supprimé.' });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// ─── Current user profile ─────────────────────────────────────────────────────
+
+export const getMe = async (req, res) => {
+  return res.status(200).json({
+    success: true,
+    user: {
+      id: req.user._id,
+      fullName: req.user.fullName,
+      email: req.user.email,
+      role: req.user.role,
+      isActive: req.user.isActive,
+      createdAt: req.user.createdAt,
+    },
+  });
+};
+
+export const updateMe = async (req, res, next) => {
+  try {
+    const { fullName, currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (fullName) user.fullName = fullName;
+
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({
+          success: false,
+          message: 'Le mot de passe actuel est requis pour en définir un nouveau.',
+        });
+      }
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({
+          success: false,
+          message: 'Mot de passe actuel incorrect.',
+        });
+      }
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Le nouveau mot de passe doit contenir au moins 6 caractères.',
+        });
+      }
+      user.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profil mis à jour.',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

@@ -20,6 +20,8 @@ const generateToken = (user) =>
 const hashResetToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
 
+const ALLOWED_ROLES = ['operator', 'quality', 'manager'];
+
 export const register = async (req, res, next) => {
   try {
     const { fullName, email, password, role } = req.body;
@@ -28,6 +30,20 @@ export const register = async (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: 'fullName, email et password sont requis.',
+      });
+    }
+
+    if (!role) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le role est requis.',
+      });
+    }
+
+    if (!ALLOWED_ROLES.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Rôle invalide.',
       });
     }
 
@@ -235,8 +251,6 @@ export const resetPassword = async (req, res, next) => {
 
 // ─── User management (manager only) ───────────────────────────────────────────
 
-const ALLOWED_ROLES = ['operator', 'quality', 'manager'];
-
 export const getUserById = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id).select('-password');
@@ -379,26 +393,60 @@ export const getMe = async (req, res) => {
 
 export const updateMe = async (req, res, next) => {
   try {
-    const { fullName, currentPassword, newPassword } = req.body;
+    const { fullName, email, currentPassword, newPassword } = req.body;
 
     const user = await User.findById(req.user._id);
 
-    if (fullName) user.fullName = fullName;
+    if (fullName !== undefined) {
+      const normalizedFullName = String(fullName).trim();
+      if (!normalizedFullName) {
+        return res.status(400).json({
+          success: false,
+          message: 'Le nom complet est requis.',
+        });
+      }
+      user.fullName = normalizedFullName;
+    }
+
+    if (email !== undefined) {
+      const normalizedEmail = String(email).trim().toLowerCase();
+      if (!normalizedEmail || !/\S+@\S+\.\S+/.test(normalizedEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email invalide.',
+        });
+      }
+
+      if (normalizedEmail !== user.email) {
+        const existing = await User.findOne({ email: normalizedEmail, _id: { $ne: user._id } });
+        if (existing) {
+          return res.status(409).json({
+            success: false,
+            message: 'Un utilisateur avec cet email existe deja.',
+          });
+        }
+        user.email = normalizedEmail;
+      }
+    }
 
     if (newPassword) {
-      if (!currentPassword) {
+      if (user.password && !currentPassword) {
         return res.status(400).json({
           success: false,
           message: 'Le mot de passe actuel est requis pour en définir un nouveau.',
         });
       }
-      const isMatch = await bcrypt.compare(currentPassword, user.password);
-      if (!isMatch) {
-        return res.status(400).json({
-          success: false,
-          message: 'Mot de passe actuel incorrect.',
-        });
+
+      if (user.password) {
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({
+            success: false,
+            message: 'Mot de passe actuel incorrect.',
+          });
+        }
       }
+
       if (newPassword.length < 6) {
         return res.status(400).json({
           success: false,
@@ -413,6 +461,126 @@ export const updateMe = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Profil mis à jour.',
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+// ─── OAuth Login (Google & Facebook) ──────────────────────────────────────────
+
+export const loginWithGoogle = async (req, res, next) => {
+  try {
+    const { googleId, email, fullName, role } = req.body;
+
+    if (!googleId || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'googleId et email sont requis.',
+      });
+    }
+
+    // Find or create user with Google ID
+    let user = await User.findOne({ googleId });
+
+    if (!user) {
+      // Check if email exists from another provider
+      user = await User.findOne({ email: email.toLowerCase() });
+
+      if (!user) {
+        if (!role) {
+          return res.status(400).json({
+            success: false,
+            message: 'Choisissez un role pour finaliser l\'inscription Google.',
+          });
+        }
+
+        if (!ALLOWED_ROLES.includes(role)) {
+          return res.status(400).json({
+            success: false,
+            message: 'Rôle invalide.',
+          });
+        }
+
+        // Create new user
+        user = await User.create({
+          googleId,
+          fullName: fullName || email.split('@')[0],
+          email: email.toLowerCase(),
+          role,
+        });
+      } else {
+        // Link Google ID to existing user
+        user.googleId = googleId;
+        await user.save();
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Connexion avec Google reussie.',
+      token: generateToken(user),
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const loginWithFacebook = async (req, res, next) => {
+  try {
+    const { facebookId, email, fullName } = req.body;
+
+    if (!facebookId) {
+      return res.status(400).json({
+        success: false,
+        message: 'facebookId est requis.',
+      });
+    }
+
+    const normalizedEmail = email
+      ? email.toLowerCase()
+      : `facebook_${facebookId}@no-email.local`;
+
+    // Find or create user with Facebook ID
+    let user = await User.findOne({ facebookId });
+
+    if (!user) {
+      // Check if email exists from another provider
+      user = await User.findOne({ email: normalizedEmail });
+
+      if (!user) {
+        // Create new user
+        user = await User.create({
+          facebookId,
+          fullName: fullName || normalizedEmail.split('@')[0],
+          email: normalizedEmail,
+          role: 'operator',
+        });
+      } else {
+        // Link Facebook ID to existing user
+        user.facebookId = facebookId;
+        await user.save();
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Connexion avec Facebook reussie.',
+      token: generateToken(user),
       user: {
         id: user._id,
         fullName: user.fullName,

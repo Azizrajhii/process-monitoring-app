@@ -1,4 +1,4 @@
-import * as React from 'react';
+import type { FormEvent } from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -20,7 +20,7 @@ export default function ForgotPassword({ open, handleClose }: ForgotPasswordProp
       slotProps={{
         paper: {
           component: 'form',
-          onSubmit: (event: React.FormEvent<HTMLFormElement>) => {
+          onSubmit: (event: FormEvent<HTMLDivElement>) => {
             event.preventDefault();
             handleClose();
           },

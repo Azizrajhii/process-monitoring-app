@@ -7,6 +7,8 @@ import {
   getUserById,
   getUsers,
   login,
+  loginWithGoogle,
+  loginWithFacebook,
   register,
   resetPassword,
   updateMe,
@@ -19,6 +21,8 @@ const router = Router();
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
+router.post('/google', loginWithGoogle);
+router.post('/facebook', loginWithFacebook);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
 

@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import apiRoutes from './routes/index.js';
 import { notFound } from './middlewares/notFound.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { auditMiddleware } from './services/audit.service.js';
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+app.use('/api', auditMiddleware);
 app.use('/api', apiRoutes);
 app.use(notFound);
 app.use(errorHandler);

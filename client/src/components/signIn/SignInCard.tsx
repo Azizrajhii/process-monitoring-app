@@ -12,7 +12,7 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../CustomIcons';
+import { GoogleIcon, FacebookIcon } from '../CustomIcons';
 import { useAuth } from '../../context/AuthContext';
 import { ensureFacebookSdk, ensureGoogleSdk } from '../../utils/oauthSdk';
 
@@ -236,9 +236,6 @@ export default function SignInCard() {
 
   return (
     <Card variant="outlined">
-      <Box sx={{ display: { xs: 'flex', md: 'none' } }}>
-        <SitemarkIcon />
-      </Box>
       <Typography
         component="h1"
         variant="h4"

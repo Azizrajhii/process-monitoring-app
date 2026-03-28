@@ -55,6 +55,20 @@ const buildLastMonthsLabels = (months) => {
   return labels;
 };
 
+const computeCapability = ({ lsl, usl, mean, stdDev }) => {
+  if (!Number.isFinite(lsl) || !Number.isFinite(usl) || stdDev <= 0 || usl <= lsl) {
+    return { cp: null, cpk: null };
+  }
+
+  const cp = (usl - lsl) / (6 * stdDev);
+  const cpk = Math.min((usl - mean) / (3 * stdDev), (mean - lsl) / (3 * stdDev));
+
+  return {
+    cp: Number.isFinite(cp) ? cp : null,
+    cpk: Number.isFinite(cpk) ? cpk : null,
+  };
+};
+
 export const getDashboardOverview = async (req, res, next) => {
   try {
     const now = new Date();
@@ -67,6 +81,8 @@ export const getDashboardOverview = async (req, res, next) => {
       activeUsers,
       activeProcesses,
       openAlerts,
+      processes,
+      measurementStatsByProcess,
       measurementsLast30,
       measurementsPrev30,
       alertsCreatedLast30,
@@ -85,6 +101,17 @@ export const getDashboardOverview = async (req, res, next) => {
       User.countDocuments({ isActive: true }),
       Process.countDocuments({ status: 'active' }),
       Alert.countDocuments({ status: 'not_treated' }),
+      Process.find({}).select('_id name status lsl usl cpTarget cpkTarget').lean(),
+      Measurement.aggregate([
+        {
+          $group: {
+            _id: '$process',
+            count: { $sum: 1 },
+            mean: { $avg: '$value' },
+            stdDev: { $stdDevPop: '$value' },
+          },
+        },
+      ]),
       Measurement.countDocuments({ date: { $gte: last30Start } }),
       Measurement.countDocuments({ date: { $gte: prev30Start, $lt: prev30End } }),
       Alert.countDocuments({ date: { $gte: last30Start } }),
@@ -236,6 +263,49 @@ export const getDashboardOverview = async (req, res, next) => {
       { role: 'operator', count: roleMap.operator || 0 },
     ];
 
+    const statsByProcessMap = new Map(
+      measurementStatsByProcess.map((item) => [String(item._id), item]),
+    );
+
+    const processCapability = processes.map((process) => {
+      const stats = statsByProcessMap.get(String(process._id));
+      const count = Number(stats?.count || 0);
+      const mean = Number(stats?.mean || 0);
+      const stdDev = Number(stats?.stdDev || 0);
+
+      const { cp, cpk } = computeCapability({
+        lsl: Number(process.lsl),
+        usl: Number(process.usl),
+        mean,
+        stdDev,
+      });
+
+      const capabilityStatus =
+        count < 2 || cpk === null
+          ? 'insufficient_data'
+          : cpk >= 1.33
+            ? 'ok'
+            : cpk >= 1
+              ? 'warning'
+              : 'non_capable';
+
+      return {
+        _id: process._id,
+        name: process.name,
+        status: process.status,
+        cpTarget: process.cpTarget,
+        cpkTarget: process.cpkTarget,
+        lsl: process.lsl,
+        usl: process.usl,
+        sampleSize: count,
+        mean,
+        stdDev,
+        cp,
+        cpk,
+        capabilityStatus,
+      };
+    });
+
     return res.status(200).json({
       success: true,
       user: req.user,
@@ -294,6 +364,7 @@ export const getDashboardOverview = async (req, res, next) => {
         },
       },
       roleDistribution,
+      processCapability,
     });
   } catch (error) {
     return next(error);

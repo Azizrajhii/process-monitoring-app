@@ -8,6 +8,8 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import FormLabel from '@mui/material/FormLabel';
 import FormControl from '@mui/material/FormControl';
 import Link from '@mui/material/Link';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import Stack from '@mui/material/Stack';
@@ -15,7 +17,7 @@ import MuiCard from '@mui/material/Card';
 import { styled } from '@mui/material/styles';
 import AppTheme from '../../theme/AppTheme';
 import ColorModeSelect from '../../theme/ColorModeSelect';
-import { GoogleIcon, FacebookIcon, SitemarkIcon } from '../CustomIcons';
+import { GoogleIcon, FacebookIcon } from '../CustomIcons';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api/http';
 import { useAuth } from '../../context/AuthContext';
@@ -26,8 +28,8 @@ const Card = styled(MuiCard)(({ theme }) => ({
   flexDirection: 'column',
   alignSelf: 'center',
   width: '100%',
-  padding: theme.spacing(4),
-  gap: theme.spacing(2),
+  padding: theme.spacing(2.5),
+  gap: theme.spacing(1.2),
   margin: 'auto',
   boxShadow:
     'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
@@ -41,11 +43,16 @@ const Card = styled(MuiCard)(({ theme }) => ({
 }));
 
 const SignUpContainer = styled(Stack)(({ theme }) => ({
-  height: 'calc((1 - var(--template-frame-height, 0)) * 100dvh)',
   minHeight: '100%',
-  padding: theme.spacing(2),
+  paddingTop: theme.spacing(1),
+  paddingBottom: theme.spacing(2),
+  paddingLeft: theme.spacing(2),
+  paddingRight: theme.spacing(2),
   [theme.breakpoints.up('sm')]: {
-    padding: theme.spacing(4),
+    paddingTop: theme.spacing(1.5),
+    paddingBottom: theme.spacing(4),
+    paddingLeft: theme.spacing(4),
+    paddingRight: theme.spacing(4),
   },
   '&::before': {
     content: '""',
@@ -66,6 +73,9 @@ const SignUpContainer = styled(Stack)(({ theme }) => ({
 export default function SignUp(props: { disableCustomTheme?: boolean }) {
   const navigate = useNavigate();
   const { login, loginWithGoogle, loginWithFacebook } = useAuth();
+  const [role, setRole] = React.useState<'operator' | 'quality' | 'manager' | ''>('');
+  const [roleError, setRoleError] = React.useState(false);
+  const [roleErrorMessage, setRoleErrorMessage] = React.useState('');
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
@@ -110,6 +120,15 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
       setNameErrorMessage('');
     }
 
+    if (!role) {
+      setRoleError(true);
+      setRoleErrorMessage('Role is required.');
+      isValid = false;
+    } else {
+      setRoleError(false);
+      setRoleErrorMessage('');
+    }
+
     return isValid;
   };
 
@@ -129,6 +148,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
         fullName: data.get('name'),
         email,
         password,
+        role,
       });
 
       // Keep one auth source of truth through AuthContext
@@ -209,7 +229,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
                 return;
               }
 
-              await loginWithGoogle(profile.sub, profile.email, profile.name || profile.email);
+              await loginWithGoogle(profile.sub, profile.email, profile.name || profile.email, role || undefined);
               navigate('/');
             } catch (err: any) {
               setServerError(err?.response?.data?.message || 'Erreur lors de l\'inscription Google.');
@@ -287,9 +307,8 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     <AppTheme {...props}>
       <CssBaseline enableColorScheme />
       <ColorModeSelect sx={{ position: 'fixed', top: '1rem', right: '1rem' }} />
-      <SignUpContainer direction="column" justifyContent="space-between">
+      <SignUpContainer direction="column" justifyContent="flex-start" alignItems="center">
         <Card variant="outlined">
-          <SitemarkIcon />
           <Typography
             component="h1"
             variant="h4"
@@ -300,7 +319,7 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
           <Box
             component="form"
             onSubmit={handleSubmit}
-            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+            sx={{ display: 'flex', flexDirection: 'column', gap: 1.2 }}
           >
             <FormControl>
               <FormLabel htmlFor="name">Full name</FormLabel>
@@ -347,6 +366,36 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
                 color={passwordError ? 'error' : 'primary'}
               />
             </FormControl>
+            <FormControl fullWidth error={roleError}>
+              <FormLabel htmlFor="role">Role</FormLabel>
+              <Select
+                id="role"
+                name="role"
+                value={role}
+                displayEmpty
+                onChange={(event) => {
+                  const nextRole = String(event.target.value) as 'operator' | 'quality' | 'manager' | '';
+                  setRole(nextRole);
+                  if (nextRole) {
+                    setRoleError(false);
+                    setRoleErrorMessage('');
+                  }
+                }}
+                required
+              >
+                <MenuItem value="" disabled>
+                  Select your role
+                </MenuItem>
+                <MenuItem value="operator">Operator</MenuItem>
+                <MenuItem value="quality">Quality Manager</MenuItem>
+                <MenuItem value="manager">Manager</MenuItem>
+              </Select>
+              {roleError && (
+                <Typography color="error" variant="caption">
+                  {roleErrorMessage}
+                </Typography>
+              )}
+            </FormControl>
             <FormControlLabel
               control={<Checkbox value="allowExtraEmails" color="primary" />}
               label="I want to receive updates via email."
@@ -368,12 +417,12 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
           <Divider>
             <Typography sx={{ color: 'text.secondary' }}>or</Typography>
           </Divider>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
             <Button
               fullWidth
               variant="outlined"
               onClick={handleGoogleSignUp}
-              disabled={oauthLoading}
+              disabled={oauthLoading || !role}
               startIcon={<GoogleIcon />}
             >
               {oauthLoading ? 'Connexion...' : 'Sign up with Google'}

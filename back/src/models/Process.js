@@ -19,6 +19,14 @@ const processSchema = new mongoose.Schema(
       type: Number,
       default: 1.33,
     },
+    lsl: {
+      type: Number,
+      default: 85,
+    },
+    usl: {
+      type: Number,
+      default: 95,
+    },
     status: {
       type: String,
       enum: ['active', 'inactive'],

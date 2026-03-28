@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "kill-port 5001 && nodemon src/server.js",
     "start": "node src/server.js",
-    "seed:dashboard": "node scripts/seed-dashboard.js"
+    "seed:dashboard": "node scripts/seed-dashboard.js",
+    "reset:keep-users-and-seed": "node scripts/reset-keep-users-and-seed.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -16,7 +17,9 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.13.2",
     "morgan": "^1.10.0",
-    "nodemailer": "^8.0.2"
+    "nodemailer": "^8.0.2",
+    "pdfkit": "^0.18.0",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "kill-port": "^2.0.1",

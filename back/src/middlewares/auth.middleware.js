@@ -27,6 +27,13 @@ export const protect = async (req, res, next) => {
       });
     }
 
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: 'Compte desactive. Contactez un manager.',
+      });
+    }
+
     req.user = user;
     return next();
   } catch (_error) {

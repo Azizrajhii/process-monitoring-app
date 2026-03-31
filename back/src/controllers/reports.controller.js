@@ -28,9 +28,10 @@ export const getIncapableRate7Days = async (req, res, next) => {
       let cpkDays = 0;
       for (const day of days) {
         const nextDay = day.add(1, 'day');
+        const windowStart = day.subtract(6, 'day');
         const measurements = await Measurement.find({
           process: proc._id,
-          createdAt: { $gte: day.toDate(), $lt: nextDay.toDate() },
+          date: { $gte: windowStart.toDate(), $lt: nextDay.toDate() },
         });
         const values = measurements.map(m => m.value);
         const cpk = calculateCpk(values, proc.lsl, proc.usl);
@@ -95,9 +96,10 @@ export const getCpkEvolution7Days = async (req, res, next) => {
     const result = await Promise.all(processes.map(async (proc) => {
       const dailyCpk = await Promise.all(days.map(async (day) => {
         const nextDay = day.add(1, 'day');
+        const windowStart = day.subtract(6, 'day');
         const measurements = await Measurement.find({
           process: proc._id,
-          createdAt: { $gte: day.toDate(), $lt: nextDay.toDate() },
+          date: { $gte: windowStart.toDate(), $lt: nextDay.toDate() },
         });
         const values = measurements.map(m => m.value);
         const cpk = calculateCpk(values, proc.lsl, proc.usl);
@@ -230,6 +232,23 @@ const detectAutomaticAlerts = (values, mean, stdDev, lsl, usl, cpk, sampleSize, 
     detectedAlerts.push({
       type: 'usl_breach',
       message: `${uslBreaches} mesure(s) au-dessus USL (${usl})`,
+    });
+  }
+
+  // 2b. Pré-alerte si proche de LSL/USL (10% marge)
+  const margin = 0.1 * (usl - lsl);
+  const nearLslCount = values.filter((v) => v >= lsl && v < lsl + margin).length;
+  const nearUslCount = values.filter((v) => v <= usl && v > usl - margin).length;
+  if (nearLslCount > 0) {
+    detectedAlerts.push({
+      type: 'near_lsl',
+      message: `${nearLslCount} mesure(s) proche de LSL (${lsl}) ⚠️`,
+    });
+  }
+  if (nearUslCount > 0) {
+    detectedAlerts.push({
+      type: 'near_usl',
+      message: `${nearUslCount} mesure(s) proche de USL (${usl}) ⚠️`,
     });
   }
 

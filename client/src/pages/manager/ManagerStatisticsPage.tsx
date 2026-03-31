@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Predictor from '../../components/Predictor';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -63,6 +64,8 @@ interface ProcessReportResponse {
 
 const toFixed2 = (value: number) => Number.isFinite(value) ? value.toFixed(2) : '0.00';
 
+
+
 export default function ManagerStatisticsPage() {
   const [loading, setLoading] = React.useState(true);
   const [reportLoading, setReportLoading] = React.useState(false);
@@ -70,6 +73,11 @@ export default function ManagerStatisticsPage() {
   const [processes, setProcesses] = React.useState<ProcessItem[]>([]);
   const [selectedProcessId, setSelectedProcessId] = React.useState('');
   const [report, setReport] = React.useState<ProcessReportResponse['report'] | null>(null);
+
+  // Ces variables dépendent de report, donc doivent être déclarées après les hooks
+  const processInfo = report?.process;
+  const latestValues = report?.charts?.spc?.values?.slice(-6) || [];
+  const uslValue = processInfo?.usl ?? 510;
 
   React.useEffect(() => {
     const fetchData = async () => {
@@ -117,7 +125,6 @@ export default function ManagerStatisticsPage() {
   }, [selectedProcessId]);
 
   const stats = report?.statistics;
-  const processInfo = report?.process;
   const capable = report?.conclusion?.status === 'capable';
   const cpValue = stats?.cp;
   const cpkValue = stats?.cpk;
@@ -210,6 +217,13 @@ export default function ManagerStatisticsPage() {
                       grid={{ horizontal: true }}
                     />
                   </Paper>
+                    {/* Prédiction ML intégrée */}
+                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, mt: 2 }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
+                        Prédiction Machine Learning (valeurs récentes)
+                      </Typography>
+                      <Predictor initialValues={latestValues} initialUsl={uslValue} />
+                    </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, lg: 5 }}>
                   <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>

@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
 import MenuItem from '@mui/material/MenuItem';
 import Paper from '@mui/material/Paper';
 import Select from '@mui/material/Select';
@@ -199,15 +200,57 @@ export default function QualityReportsPage() {
 
   return (
     <Stack spacing={2.5}>
-      <Box>
-        <Typography variant="h4" fontWeight={800}>Rapports qualite</Typography>
-        <Typography color="text.secondary">
-          Lecture de capabilite par processus, comparaison temporelle et export CSV.
-        </Typography>
-      </Box>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 2.6 },
+          borderRadius: 4,
+          borderColor: 'primary.light',
+          background: 'linear-gradient(130deg, rgba(25,118,210,0.16), rgba(124,77,255,0.08))',
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5} alignItems={{ md: 'center' }}>
+          <Box>
+            <Typography variant="h4" fontWeight={900}>
+              Rapports qualite
+            </Typography>
+            <Typography color="text.secondary">
+              Lecture de capabilite par processus, comparaison temporelle et export CSV/PDF.
+            </Typography>
+          </Box>
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Chip label="SPC & Capabilite" color="primary" variant="outlined" sx={{ fontWeight: 800 }} />
+            <Chip label="Comparaison Cp/Cpk" color="primary" variant="outlined" sx={{ fontWeight: 800 }} />
+          </Stack>
+        </Stack>
+      </Paper>
 
-      {error && <Alert severity="warning">{error}</Alert>}
-      {feedback && <Alert severity={feedback.severity}>{feedback.message}</Alert>}
+      {error && (
+        <Alert
+          severity="warning"
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            bgcolor: 'rgba(10,15,28,0.6)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          {error}
+        </Alert>
+      )}
+      {feedback && (
+        <Alert
+          severity={feedback.severity}
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            bgcolor: 'rgba(10,15,28,0.6)',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          {feedback.message}
+        </Alert>
+      )}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
@@ -215,7 +258,15 @@ export default function QualityReportsPage() {
         </Box>
       ) : (
         <>
-          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2.5,
+              borderRadius: 4,
+              borderColor: 'divider',
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+            }}
+          >
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
               <FormControl size="small" sx={{ minWidth: 300 }}>
                 <Select value={selectedProcessId} onChange={(e) => setSelectedProcessId(e.target.value)}>
@@ -236,6 +287,12 @@ export default function QualityReportsPage() {
                 onClick={exportCsv}
                 disabled={exporting !== null || reportLoading}
                 startIcon={exporting === 'csv' ? <CircularProgress size={16} color="inherit" /> : undefined}
+                sx={{
+                  borderRadius: 99,
+                  textTransform: 'none',
+                  fontWeight: 800,
+                  background: 'linear-gradient(90deg, #1976d2, #7c4dff)',
+                }}
               >
                 {exporting === 'csv' ? 'Export CSV...' : 'Exporter CSV'}
               </Button>
@@ -244,6 +301,7 @@ export default function QualityReportsPage() {
                 onClick={exportPdf}
                 disabled={exporting !== null || reportLoading}
                 startIcon={exporting === 'pdf' ? <CircularProgress size={16} /> : undefined}
+                sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 800 }}
               >
                 {exporting === 'pdf' ? 'Export PDF...' : 'Exporter PDF'}
               </Button>
@@ -258,31 +316,68 @@ export default function QualityReportsPage() {
             <>
 
 
-              <Box display="flex" flexWrap="wrap" gap={2}>
-                <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1.2 }}>Statistiques actuelles</Typography>
-                    <Typography><strong>Sample size:</strong> {report?.statistics.sampleSize}</Typography>
-                    <Typography><strong>Moyenne:</strong> {toFixed2(report?.statistics.mean ?? 0)}</Typography>
-                    <Typography><strong>Ecart type:</strong> {toFixed2(report?.statistics.stdDev ?? 0)}</Typography>
-                    <Typography><strong>Cp:</strong> {report?.statistics.cp === null ? 'N/A' : toFixed2(report?.statistics.cp ?? 0)}</Typography>
-                    <Typography><strong>Cpk:</strong> {report?.statistics.cpk === null ? 'N/A' : toFixed2(report?.statistics.cpk ?? 0)}</Typography>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2.5,
+                      borderRadius: 3,
+                      borderColor: 'primary.light',
+                      background: 'linear-gradient(180deg, rgba(25,118,210,0.08), rgba(124,77,255,0.02))',
+                      height: '100%',
+                    }}
+                  >
+                    <Typography variant="h6" fontWeight={800} sx={{ mb: 1.2 }}>
+                      Statistiques actuelles
+                    </Typography>
+                    <Stack spacing={1}>
+                      <Typography><strong>Sample size:</strong> {report?.statistics.sampleSize}</Typography>
+                      <Typography><strong>Moyenne:</strong> {toFixed2(report?.statistics.mean ?? 0)}</Typography>
+                      <Typography><strong>Ecart type:</strong> {toFixed2(report?.statistics.stdDev ?? 0)}</Typography>
+                      <Typography><strong>Cp:</strong> {report?.statistics.cp === null ? 'N/A' : toFixed2(report?.statistics.cp ?? 0)}</Typography>
+                      <Typography><strong>Cpk:</strong> {report?.statistics.cpk === null ? 'N/A' : toFixed2(report?.statistics.cpk ?? 0)}</Typography>
+                    </Stack>
                   </Paper>
-                </Box>
-                <Box sx={{ flex: '1 1 300px', minWidth: 0 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, height: '100%' }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1.2 }}>Conclusion</Typography>
-                    <Alert severity={report?.conclusion.status === 'capable' ? 'success' : 'warning'}>
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2.5,
+                      borderRadius: 3,
+                      height: '100%',
+                      borderColor: 'primary.light',
+                      background: 'linear-gradient(180deg, rgba(25,118,210,0.08), rgba(124,77,255,0.02))',
+                    }}
+                  >
+                    <Typography variant="h6" fontWeight={800} sx={{ mb: 1.2 }}>
+                      Conclusion
+                    </Typography>
+                    <Alert
+                      severity={report?.conclusion.status === 'capable' ? 'success' : 'warning'}
+                      variant="outlined"
+                      sx={{ borderRadius: 2.5, bgcolor: 'rgba(255,255,255,0.02)' }}
+                    >
                       {report?.conclusion.message}
                     </Alert>
                   </Paper>
-                </Box>
-              </Box>
+                </Grid>
+              </Grid>
 
               {/* SPC Chart (X-bar) */}
               {report.charts?.spc && Array.isArray(report.charts.spc.values) && report.charts.spc.values.length > 0 && (
-                <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, mt: 2, background: 'linear-gradient(90deg, #f3e5f5 60%, #e1bee7 100%)' }}>
-                  <Typography variant="h6" fontWeight={800} sx={{ mb: 1.5, color: '#7b1fa2' }}>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2.5,
+                    borderRadius: 3,
+                    mt: 2,
+                    borderColor: 'primary.light',
+                    background: 'linear-gradient(180deg, rgba(25,118,210,0.07), rgba(124,77,255,0.03))',
+                  }}
+                >
+                  <Typography variant="h6" fontWeight={900} sx={{ mb: 1.5 }}>
                     SPC Chart (X-bar) — Contrôle process
                   </Typography>
                   <LineChart
@@ -291,7 +386,7 @@ export default function QualityReportsPage() {
                       {
                         data: report.charts.spc.values,
                         label: 'Valeur',
-                        color: '#7b1fa2',
+                        color: '#7c4dff',
                         showMark: true,
                         curve: 'linear',
                         area: false,
@@ -299,7 +394,7 @@ export default function QualityReportsPage() {
                       {
                         data: Array(report.charts.spc.values.length).fill(report.statistics.mean),
                         label: 'Moyenne',
-                        color: '#0288d1',
+                        color: '#1976d2',
                         showMark: false,
                         curve: 'linear',
                         area: false,
@@ -307,7 +402,7 @@ export default function QualityReportsPage() {
                       {
                         data: Array(report.charts.spc.values.length).fill(report.charts.spc.lsl),
                         label: 'LSL',
-                        color: '#d32f2f',
+                        color: 'rgba(144,164,174,0.9)',
                         showMark: false,
                         curve: 'linear',
                         area: false,
@@ -315,7 +410,7 @@ export default function QualityReportsPage() {
                       {
                         data: Array(report.charts.spc.values.length).fill(report.charts.spc.usl),
                         label: 'USL',
-                        color: '#d32f2f',
+                        color: 'rgba(144,164,174,0.9)',
                         showMark: false,
                         curve: 'linear',
                         area: false,
@@ -336,12 +431,13 @@ export default function QualityReportsPage() {
                     p: 3,
                     borderRadius: 4,
                     mt: 3,
-                    background: 'linear-gradient(90deg, #f8fafc 60%, #e3f2fd 100%)',
-                    boxShadow: 3,
+                    borderColor: 'primary.light',
+                    background: 'linear-gradient(180deg, rgba(25,118,210,0.08), rgba(124,77,255,0.03))',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
                   }}
                 >
-                  <Typography variant="h5" fontWeight={800} sx={{ mb: 2, color: '#1976d2', letterSpacing: 1 }}>
-                    <ScienceIcon sx={{ mr: 1, verticalAlign: 'middle', color: '#0288d1' }} /> Alertes intelligentes
+                  <Typography variant="h5" fontWeight={900} sx={{ mb: 2, letterSpacing: 0.2 }}>
+                    <ScienceIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'primary.main' }} /> Alertes intelligentes
                   </Typography>
                   {report.alerts.map((alert, idx) => (
                     <Fade in timeout={700}>
@@ -350,16 +446,16 @@ export default function QualityReportsPage() {
                         severity={alert.type === 'cpk_low' ? 'error' : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? 'error' : alert.type === 'trend_up' ? 'warning' : alert.type === 'trend_down' ? 'warning' : 'warning'}
                         sx={{
                           borderRadius: 3,
-                          fontSize: '1.08rem',
+                          fontSize: '1.02rem',
                           alignItems: 'center',
-                          background: alert.type === 'cpk_low' ? 'linear-gradient(90deg, #ffebee 60%, #ffcdd2 100%)' : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? 'linear-gradient(90deg, #fffde7 60%, #ffe082 100%)' : 'linear-gradient(90deg, #e3f2fd 60%, #bbdefb 100%)',
-                          boxShadow: alert.type === 'cpk_low' ? 4 : 2,
-                          borderLeft: `6px solid ${alert.type === 'cpk_low' ? '#d32f2f' : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? '#fbc02d' : '#0288d1'}`,
+                          bgcolor: 'rgba(255,255,255,0.03)',
+                          boxShadow: 2,
+                          borderLeft: `6px solid ${alert.type === 'cpk_low' ? '#ef4444' : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? '#f59e0b' : '#60a5fa'}`,
                         }}
                       >
                         <Box display="flex" alignItems="center" gap={1}>
                           <Chip label={alert.type === 'cpk_low' ? 'Cpk bas' : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? 'Limite dépassée' : alert.type === 'trend_up' ? 'Tendance ↑' : alert.type === 'trend_down' ? 'Tendance ↓' : 'Anomalie'} color={alert.type === 'cpk_low' ? 'error' : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? 'error' : alert.type === 'trend_up' ? 'warning' : alert.type === 'trend_down' ? 'warning' : 'warning'} size="small" sx={{ fontWeight: 700, letterSpacing: 0.5 }} />
-                          <Box component="span" fontWeight={700} sx={{ textTransform: 'capitalize', color: alert.type === 'cpk_low' ? '#b71c1c' : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? '#f57c00' : '#1976d2' }}>
+                          <Box component="span" fontWeight={800} sx={{ textTransform: 'capitalize', color: 'text.primary' }}>
                             {alert.type.replace(/_/g, ' ')}
                           </Box>
                         </Box>
@@ -385,8 +481,16 @@ export default function QualityReportsPage() {
                 </Paper>
               )}
 
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  borderRadius: 3,
+                  borderColor: 'primary.light',
+                  background: 'linear-gradient(180deg, rgba(25,118,210,0.06), rgba(124,77,255,0.03))',
+                }}
+              >
+                <Typography variant="h6" fontWeight={800} sx={{ mb: 1.5 }}>
                   Historique comparaison Cp/Cpk
                 </Typography>
                 <LineChart

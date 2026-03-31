@@ -1,7 +1,9 @@
 import * as React from 'react';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -126,20 +128,45 @@ export default function QualityAlertsPage() {
 
   return (
     <Stack spacing={2.5}>
-      <Box>
-        <Typography variant="h4" fontWeight={800}>Alertes qualite</Typography>
-        <Typography color="text.secondary">
-          Traitement des ecarts, mise a jour des statuts et enregistrement des actions correctives.
-        </Typography>
-      </Box>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 2.6 },
+          borderRadius: 4,
+          borderColor: 'primary.light',
+          background: 'linear-gradient(130deg, rgba(25,118,210,0.16), rgba(124,77,255,0.08))',
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5} alignItems={{ md: 'center' }}>
+          <Box>
+            <Typography variant="h4" fontWeight={900} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <NotificationsActiveIcon />
+              Alertes qualite
+            </Typography>
+            <Typography color="text.secondary">
+              Traitement des ecarts, mise a jour des statuts et enregistrement des actions correctives.
+            </Typography>
+          </Box>
+          <Chip label={`${alerts.length} alerte(s)`} color="primary" variant="outlined" sx={{ width: 'fit-content', fontWeight: 700 }} />
+        </Stack>
+      </Paper>
 
-      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          borderColor: 'divider',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+        }}
+      >
         <FormControl size="small" sx={{ minWidth: 220 }}>
           <InputLabel>Filtrer par statut</InputLabel>
           <Select
             label="Filtrer par statut"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as 'all' | AlertStatus)}
+            sx={{ borderRadius: 2 }}
           >
             <MenuItem value="all">Tous</MenuItem>
             <MenuItem value="not_treated">Non traitee</MenuItem>
@@ -155,10 +182,19 @@ export default function QualityAlertsPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            overflow: 'hidden',
+            borderColor: 'divider',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+          }}
+        >
           <Table>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ '& th': { fontWeight: 800, bgcolor: 'rgba(25,118,210,0.08)' } }}>
                 <TableCell>Date</TableCell>
                 <TableCell>Processus</TableCell>
                 <TableCell>Type</TableCell>
@@ -180,22 +216,37 @@ export default function QualityAlertsPage() {
                       : 'Processus inconnu';
 
                   return (
-                    <TableRow key={item._id} hover>
+                    <TableRow key={item._id} hover sx={{ '&:hover': { bgcolor: 'rgba(25,118,210,0.06)' } }}>
                       <TableCell>{new Date(item.date).toLocaleString('fr-FR')}</TableCell>
                       <TableCell>{processName}</TableCell>
-                      <TableCell>{typeLabelMap[item.type] || item.type}</TableCell>
+                      <TableCell>
+                        <Chip size="small" variant="outlined" color="info" label={typeLabelMap[item.type] || item.type} />
+                      </TableCell>
                       <TableCell>{item.message || '-'}</TableCell>
-                      <TableCell>{item.status === 'treated' ? 'Traitee' : 'Non traitee'}</TableCell>
+                      <TableCell>
+                        <Chip
+                          size="small"
+                          color={item.status === 'treated' ? 'success' : 'warning'}
+                          variant={item.status === 'treated' ? 'filled' : 'outlined'}
+                          label={item.status === 'treated' ? 'Traitee' : 'Non traitee'}
+                        />
+                      </TableCell>
                       <TableCell align="right">
                         <Stack direction="row" spacing={1} justifyContent="flex-end">
                           <Button
                             size="small"
                             variant="outlined"
                             onClick={() => updateStatus(item._id, item.status === 'treated' ? 'not_treated' : 'treated')}
+                            sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 700 }}
                           >
                             {item.status === 'treated' ? 'Reouvrir' : 'Traiter'}
                           </Button>
-                          <Button size="small" variant="contained" onClick={() => openActionDialog(item._id)}>
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => openActionDialog(item._id)}
+                            sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 700 }}
+                          >
                             Action corrective
                           </Button>
                         </Stack>
@@ -209,8 +260,21 @@ export default function QualityAlertsPage() {
         </TableContainer>
       )}
 
-      <Dialog open={actionDialogOpen} onClose={() => setActionDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Ajouter une action corrective</DialogTitle>
+      <Dialog
+        open={actionDialogOpen}
+        onClose={() => setActionDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            border: '1px solid',
+            borderColor: 'primary.light',
+            background: 'linear-gradient(160deg, rgba(20,28,44,0.97), rgba(18,22,34,0.98))',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 900 }}>Ajouter une action corrective</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>
             <TextField
@@ -220,6 +284,7 @@ export default function QualityAlertsPage() {
               multiline
               minRows={3}
               required
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
             <TextField
               label="Resultat (optionnel)"
@@ -227,12 +292,25 @@ export default function QualityAlertsPage() {
               onChange={(e) => setActionResult(e.target.value)}
               multiline
               minRows={2}
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
           </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setActionDialogOpen(false)}>Annuler</Button>
-          <Button variant="contained" onClick={submitCorrectiveAction}>Enregistrer</Button>
+        <DialogActions sx={{ p: 2 }}>
+          <Button onClick={() => setActionDialogOpen(false)} sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 700 }}>Annuler</Button>
+          <Button
+            variant="contained"
+            onClick={submitCorrectiveAction}
+            sx={{
+              borderRadius: 99,
+              px: 2.3,
+              textTransform: 'none',
+              fontWeight: 800,
+              background: 'linear-gradient(90deg, #1976d2, #7c4dff)',
+            }}
+          >
+            Enregistrer
+          </Button>
         </DialogActions>
       </Dialog>
 
@@ -244,8 +322,15 @@ export default function QualityAlertsPage() {
       >
         <Alert
           severity={snack.severity}
-          variant="filled"
+          variant="outlined"
           onClose={() => setSnack((s) => ({ ...s, open: false }))}
+          sx={{
+            minWidth: 360,
+            borderRadius: 3,
+            color: '#f3f4f6',
+            bgcolor: 'rgba(10,15,28,0.96)',
+            backdropFilter: 'blur(8px)',
+          }}
         >
           {snack.message}
         </Alert>

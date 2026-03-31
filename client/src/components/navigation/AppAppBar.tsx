@@ -73,7 +73,7 @@ export default function AppAppBar() {
 
   const handleLogout = () => {
     logout();
-    navigate('/signin');
+    navigate('/');
   };
 
   const getNotificationsPath = () => {

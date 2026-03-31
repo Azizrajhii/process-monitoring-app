@@ -195,10 +195,18 @@ export default function UserProfilePage() {
       </Paper>
 
       {/* Account Settings */}
-      <Paper variant="outlined" sx={{ p: 3, borderRadius: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 3,
+          borderRadius: 3,
+          borderColor: 'primary.light',
+          background: 'linear-gradient(180deg, rgba(25,118,210,0.06), rgba(124,77,255,0.03))',
+        }}
+      >
         <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
           <BadgeRoundedIcon fontSize="small" />
-          <Typography variant="h6" fontWeight={700}>
+          <Typography variant="h6" fontWeight={800}>
             Informations du compte
           </Typography>
         </Stack>
@@ -214,6 +222,7 @@ export default function UserProfilePage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={profileLoading}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -224,6 +233,7 @@ export default function UserProfilePage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={profileLoading}
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -232,6 +242,7 @@ export default function UserProfilePage() {
                 label="Rôle"
                 value={user?.role ? getRoleLabel(user.role) : ''}
                 disabled
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
             </Grid>
             <Grid size={{ xs: 12, md: 6 }}>
@@ -240,6 +251,7 @@ export default function UserProfilePage() {
                 label="Statut"
                 value={user?.isActive ? 'Actif' : 'Inactif'}
                 disabled
+                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
               />
             </Grid>
           </Grid>
@@ -249,6 +261,13 @@ export default function UserProfilePage() {
               variant="contained"
               onClick={handleProfileSave}
               disabled={profileLoading}
+              sx={{
+                borderRadius: 99,
+                px: 2.4,
+                textTransform: 'none',
+                fontWeight: 800,
+                background: 'linear-gradient(90deg, #1976d2, #7c4dff)',
+              }}
             >
               {profileLoading ? <CircularProgress size={20} /> : 'Enregistrer le profil'}
             </Button>
@@ -269,6 +288,7 @@ export default function UserProfilePage() {
             <Button
               variant="outlined"
               onClick={() => setOpenPasswordDialog(true)}
+              sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 700 }}
             >
               Changer le mot de passe
             </Button>
@@ -277,7 +297,15 @@ export default function UserProfilePage() {
       </Paper>
 
       {/* Additional Information */}
-      <Paper variant="outlined" sx={{ p: 3, borderRadius: 3, backgroundColor: '#fafafa' }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 3,
+          borderRadius: 3,
+          borderColor: 'divider',
+          bgcolor: 'rgba(255,255,255,0.02)',
+        }}
+      >
         <Typography variant="body2" color="text.secondary">
           💡 <strong>Conseil:</strong> Les champs nom et email sont modifiables ici.
           Le role et le statut restent en lecture seule.
@@ -285,8 +313,21 @@ export default function UserProfilePage() {
       </Paper>
 
       {/* Password Change Dialog */}
-      <Dialog open={openPasswordDialog} onClose={() => setOpenPasswordDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Changer le mot de passe</DialogTitle>
+      <Dialog
+        open={openPasswordDialog}
+        onClose={() => setOpenPasswordDialog(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 4,
+            border: '1px solid',
+            borderColor: 'primary.light',
+            background: 'linear-gradient(160deg, rgba(20,28,44,0.97), rgba(18,22,34,0.98))',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 900 }}>Changer le mot de passe</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
           <Stack spacing={2}>
             {passwordError && <Alert severity="error">{passwordError}</Alert>}
@@ -302,6 +343,7 @@ export default function UserProfilePage() {
               disabled={passwordLoading}
               variant="outlined"
               autoComplete="current-password"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <TextField
@@ -315,6 +357,7 @@ export default function UserProfilePage() {
               variant="outlined"
               helperText="Minimum 6 caractères"
               autoComplete="new-password"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
 
             <TextField
@@ -327,6 +370,7 @@ export default function UserProfilePage() {
               disabled={passwordLoading}
               variant="outlined"
               autoComplete="new-password"
+              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
           </Stack>
         </DialogContent>
@@ -341,6 +385,13 @@ export default function UserProfilePage() {
             onClick={handlePasswordSubmit}
             variant="contained"
             disabled={passwordLoading}
+            sx={{
+              borderRadius: 99,
+              px: 2.3,
+              textTransform: 'none',
+              fontWeight: 800,
+              background: 'linear-gradient(90deg, #1976d2, #7c4dff)',
+            }}
           >
             {passwordLoading ? <CircularProgress size={24} /> : 'Changer'}
           </Button>

@@ -1,6 +1,8 @@
 import * as React from 'react';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
@@ -83,16 +85,38 @@ export default function OperatorAlertsPage() {
 
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h4" fontWeight={800}>
-          Alertes operateur
-        </Typography>
-        <Typography color="text.secondary">
-          Suivi des alertes de processus a traiter sur la ligne.
-        </Typography>
-      </Box>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 2.6 },
+          borderRadius: 4,
+          borderColor: 'primary.light',
+          background: 'linear-gradient(130deg, rgba(25,118,210,0.16), rgba(124,77,255,0.08))',
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5} alignItems={{ md: 'center' }}>
+          <Box>
+            <Typography variant="h4" fontWeight={900} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <NotificationsActiveIcon />
+              Alertes operateur
+            </Typography>
+            <Typography color="text.secondary">
+              Suivi des alertes de processus a traiter sur la ligne.
+            </Typography>
+          </Box>
+          <Chip label={`${alerts.length} alerte(s)`} color="primary" variant="outlined" sx={{ width: 'fit-content', fontWeight: 700 }} />
+        </Stack>
+      </Paper>
 
-      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          borderColor: 'divider',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+        }}
+      >
         <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 220 }}>
             <InputLabel>Filtrer par statut</InputLabel>
@@ -100,6 +124,7 @@ export default function OperatorAlertsPage() {
               value={statusFilter}
               label="Filtrer par statut"
               onChange={(e) => setStatusFilter(e.target.value as 'all' | AlertStatus)}
+              sx={{ borderRadius: 2 }}
             >
               <MenuItem value="all">Tous les statuts</MenuItem>
               <MenuItem value="not_treated">Non traitée</MenuItem>
@@ -110,6 +135,14 @@ export default function OperatorAlertsPage() {
           <Typography variant="body2" color="text.secondary">
             Total: {alerts.length} alerte(s)
           </Typography>
+          <Button
+            variant="outlined"
+            onClick={fetchAlerts}
+            disabled={loading}
+            sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 700 }}
+          >
+            Actualiser
+          </Button>
         </Stack>
       </Paper>
 
@@ -120,15 +153,24 @@ export default function OperatorAlertsPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            overflow: 'hidden',
+            borderColor: 'divider',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+          }}
+        >
           <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5', position: 'sticky', top: 0 }}>
-              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableCell sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Date</strong></TableCell>
-                <TableCell sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Processus</strong></TableCell>
-                <TableCell sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Type</strong></TableCell>
-                <TableCell sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Message</strong></TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Statut</strong></TableCell>
+            <TableHead>
+              <TableRow sx={{ '& th': { fontWeight: 800, bgcolor: 'rgba(25,118,210,0.08)' } }}>
+                <TableCell><strong>Date</strong></TableCell>
+                <TableCell><strong>Processus</strong></TableCell>
+                <TableCell><strong>Type</strong></TableCell>
+                <TableCell><strong>Message</strong></TableCell>
+                <TableCell align="center"><strong>Statut</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -148,12 +190,14 @@ export default function OperatorAlertsPage() {
                       : 'Processus inconnu';
 
                   return (
-                    <TableRow key={item._id} hover>
+                    <TableRow key={item._id} hover sx={{ '&:hover': { bgcolor: 'rgba(25,118,210,0.06)' } }}>
                       <TableCell>{new Date(item.date).toLocaleString('fr-FR')}</TableCell>
                       <TableCell>
                         <Typography fontWeight={600}>{processName}</Typography>
                       </TableCell>
-                      <TableCell>{getTypeLabel(item.type)}</TableCell>
+                      <TableCell>
+                        <Chip size="small" variant="outlined" color="info" label={getTypeLabel(item.type)} />
+                      </TableCell>
                       <TableCell>
                         <Typography variant="body2" color="text.secondary">
                           {item.message || '-'}
@@ -164,6 +208,7 @@ export default function OperatorAlertsPage() {
                           size="small"
                           color={getStatusChipColor(item.status)}
                           label={item.status === 'treated' ? 'Traitee' : 'Non traitee'}
+                          variant={item.status === 'treated' ? 'filled' : 'outlined'}
                         />
                       </TableCell>
                     </TableRow>

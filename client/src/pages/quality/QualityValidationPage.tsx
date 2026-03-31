@@ -1,6 +1,8 @@
 import * as React from 'react';
+import FactCheckIcon from '@mui/icons-material/FactCheck';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
@@ -90,14 +92,38 @@ export default function QualityValidationPage() {
 
   return (
     <Stack spacing={2.5}>
-      <Box>
-        <Typography variant="h4" fontWeight={800}>Validation qualite</Typography>
-        <Typography color="text.secondary">
-          Controle des mesures recentes avec detection des valeurs hors limites (LSL/USL).
-        </Typography>
-      </Box>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 2.6 },
+          borderRadius: 4,
+          borderColor: 'primary.light',
+          background: 'linear-gradient(130deg, rgba(25,118,210,0.16), rgba(124,77,255,0.08))',
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5} alignItems={{ md: 'center' }}>
+          <Box>
+            <Typography variant="h4" fontWeight={900} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FactCheckIcon />
+              Validation qualite
+            </Typography>
+            <Typography color="text.secondary">
+              Controle des mesures recentes avec detection des valeurs hors limites (LSL/USL).
+            </Typography>
+          </Box>
+          <Chip label={`${screenedRows.length} mesure(s)`} color="primary" variant="outlined" sx={{ width: 'fit-content', fontWeight: 700 }} />
+        </Stack>
+      </Paper>
 
-      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          borderColor: 'divider',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+        }}
+      >
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 320 }}>
             <InputLabel>Processus</InputLabel>
@@ -105,6 +131,7 @@ export default function QualityValidationPage() {
               label="Processus"
               value={processId}
               onChange={(e) => setProcessId(e.target.value)}
+              sx={{ borderRadius: 2 }}
             >
               <MenuItem value="">Tous les processus</MenuItem>
               {processes.map((p) => (
@@ -125,10 +152,19 @@ export default function QualityValidationPage() {
           <CircularProgress />
         </Box>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            overflow: 'hidden',
+            borderColor: 'divider',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+          }}
+        >
           <Table>
             <TableHead>
-              <TableRow>
+              <TableRow sx={{ '& th': { fontWeight: 800, bgcolor: 'rgba(25,118,210,0.08)' } }}>
                 <TableCell>Date</TableCell>
                 <TableCell>Processus</TableCell>
                 <TableCell>Valeur</TableCell>
@@ -144,7 +180,7 @@ export default function QualityValidationPage() {
                 </TableRow>
               ) : (
                 screenedRows.map((row) => (
-                  <TableRow key={row._id} hover selected={row.outOfSpec}>
+                  <TableRow key={row._id} hover selected={row.outOfSpec} sx={{ '&:hover': { bgcolor: 'rgba(25,118,210,0.06)' } }}>
                     <TableCell>{new Date(row.date).toLocaleString('fr-FR')}</TableCell>
                     <TableCell>{row.process?.name || '-'}</TableCell>
                     <TableCell>{row.value}</TableCell>
@@ -152,9 +188,9 @@ export default function QualityValidationPage() {
                     <TableCell>{Number.isFinite(row.usl) ? row.usl : '-'}</TableCell>
                     <TableCell>
                       {row.outOfSpec ? (
-                        <Typography color="warning.main" fontWeight={700}>Hors spec</Typography>
+                        <Chip size="small" color="warning" variant="outlined" label="Hors spec" />
                       ) : (
-                        <Typography color="success.main" fontWeight={700}>Conforme</Typography>
+                        <Chip size="small" color="success" variant="outlined" label="Conforme" />
                       )}
                     </TableCell>
                   </TableRow>

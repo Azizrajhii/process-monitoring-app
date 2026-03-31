@@ -1,3 +1,4 @@
+import FactoryIcon from '@mui/icons-material/Factory';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -77,16 +78,38 @@ export default function OperatorProcessesPage() {
 
   return (
     <Stack spacing={3}>
-      <Box>
-        <Typography variant="h4" fontWeight={800}>
-          Processus assignés
-        </Typography>
-        <Typography color="text.secondary">
-          Vue des processus avec leurs limites de spécification.
-        </Typography>
-      </Box>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 2.6 },
+          borderRadius: 4,
+          borderColor: 'primary.light',
+          background: 'linear-gradient(130deg, rgba(25,118,210,0.16), rgba(124,77,255,0.08))',
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} justifyContent="space-between" gap={1.5} alignItems={{ md: 'center' }}>
+          <Box>
+            <Typography variant="h4" fontWeight={900} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <FactoryIcon />
+              Processus assignés
+            </Typography>
+            <Typography color="text.secondary">
+              Vue des processus avec leurs limites de spécification.
+            </Typography>
+          </Box>
+          <Chip label={`${processes.length} processus`} color="primary" variant="outlined" sx={{ width: 'fit-content', fontWeight: 700 }} />
+        </Stack>
+      </Paper>
 
-      <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: 2.5,
+          borderRadius: 3,
+          borderColor: 'divider',
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+        }}
+      >
         <Stack direction={{ xs: 'column', md: 'row' }} gap={1.5}>
           <TextField
             size="small"
@@ -110,6 +133,7 @@ export default function OperatorProcessesPage() {
             onClick={() => fetchProcesses('refresh')}
             disabled={refreshing || loading}
             startIcon={refreshing ? <CircularProgress size={16} /> : undefined}
+            sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 700 }}
           >
             {refreshing ? 'Actualisation...' : 'Actualiser'}
           </Button>
@@ -123,18 +147,27 @@ export default function OperatorProcessesPage() {
       ) : error ? (
         <Alert severity="error">{error}</Alert>
       ) : (
-        <TableContainer component={Paper} variant="outlined">
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          sx={{
+            borderRadius: 3,
+            overflow: 'hidden',
+            borderColor: 'divider',
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(124,77,255,0.02))',
+          }}
+        >
           <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5', position: 'sticky', top: 0 }}>
-              <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                <TableCell sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Nom</strong></TableCell>
-                <TableCell sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Ligne</strong></TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>LSL</strong></TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>USL</strong></TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Cp cible</strong></TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Cpk cible</strong></TableCell>
-                <TableCell align="center" sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Statut</strong></TableCell>
-                <TableCell align="center" width={100} sx={{ fontWeight: 700, backgroundColor: '#f5f5f5', color: '#000' }}><strong>Actions</strong></TableCell>
+            <TableHead>
+              <TableRow sx={{ '& th': { fontWeight: 800, bgcolor: 'rgba(25,118,210,0.08)' } }}>
+                <TableCell><strong>Nom</strong></TableCell>
+                <TableCell><strong>Ligne</strong></TableCell>
+                <TableCell align="center"><strong>LSL</strong></TableCell>
+                <TableCell align="center"><strong>USL</strong></TableCell>
+                <TableCell align="center"><strong>Cp cible</strong></TableCell>
+                <TableCell align="center"><strong>Cpk cible</strong></TableCell>
+                <TableCell align="center"><strong>Statut</strong></TableCell>
+                <TableCell align="center" width={100}><strong>Actions</strong></TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -148,7 +181,7 @@ export default function OperatorProcessesPage() {
                 </TableRow>
               ) : (
                 processes.map((process) => (
-                  <TableRow key={process._id} hover>
+                  <TableRow key={process._id} hover sx={{ '&:hover': { bgcolor: 'rgba(25,118,210,0.06)' } }}>
                     <TableCell>
                       <Typography fontWeight={600}>{process.name}</Typography>
                     </TableCell>
@@ -167,8 +200,9 @@ export default function OperatorProcessesPage() {
                     <TableCell align="center">
                       <Button
                         size="small"
-                        variant="text"
+                        variant="outlined"
                         onClick={() => navigate(`/operator/process/${process._id}`)}
+                        sx={{ borderRadius: 99, textTransform: 'none', fontWeight: 700 }}
                       >
                         Détails
                       </Button>

@@ -48,13 +48,26 @@ export const logAudit = async (options) => {
 
 export const getAuditTrail = async (filters = {}) => {
   try {
-    const { entity, entityId, userId, action, limit = 50, skip = 0 } = filters;
+    const {
+      entity,
+      entityId,
+      userId,
+      action,
+      limit = 50,
+      skip = 0,
+      requesterRole,
+    } = filters;
 
     const query = {};
     if (entity) query.entity = entity;
     if (entityId) query.entityId = entityId;
     if (userId) query['user.userId'] = userId;
     if (action) query.action = action;
+
+    // Quality users can only view operator and quality audit entries.
+    if (requesterRole === 'quality') {
+      query['user.role'] = { $in: ['operator', 'quality'] };
+    }
 
     const logs = await AuditLog.find(query)
       .sort({ timestamp: -1 })

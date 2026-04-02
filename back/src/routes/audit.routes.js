@@ -15,6 +15,7 @@ router.get('/audit-trail', protect, restrictTo('manager', 'quality'), async (req
       action: action || null,
       limit: parseInt(limit, 10),
       skip: parseInt(skip, 10),
+      requesterRole: req.user?.role,
     };
 
     // Remove null filters
@@ -44,6 +45,7 @@ router.get('/audit-trail/:entity/:entityId', protect, restrictTo('manager', 'qua
       entity,
       entityId,
       limit: 100,
+      requesterRole: req.user?.role,
     });
 
     return res.status(200).json({

@@ -79,9 +79,13 @@ export const getMeasurements = async (req, res, next) => {
     if (process) {
       filter.process = process;
     }
+    if (req.user?.role === 'operator') {
+      filter.createdBy = req.user._id;
+    }
     
     const measurements = await Measurement.find(filter)
       .populate('process', 'name')
+      .populate('createdBy', 'fullName role')
       .sort(sort)
       .limit(parseInt(limit, 10))
       .skip(parseInt(skip, 10))
@@ -104,12 +108,21 @@ export const getMeasurementById = async (req, res, next) => {
   try {
     const measurement = await Measurement.findById(req.params.id)
       .populate('process', 'name lsl usl')
+      .populate('createdBy', 'fullName role')
       .lean();
 
     if (!measurement) {
       return res.status(404).json({
         success: false,
         message: 'Mesure introuvable.',
+      });
+    }
+
+    const ownerId = String(measurement.createdBy?._id || measurement.createdBy || '');
+    if (req.user?.role === 'operator' && ownerId !== String(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé: vous ne pouvez consulter que vos propres mesures.',
       });
     }
 
@@ -154,6 +167,7 @@ export const createMeasurement = async (req, res, next) => {
       value: Number(value),
       date: date ? new Date(date) : new Date(),
       comment: comment || '',
+      createdBy: req.user?._id,
     });
 
     // Log to audit trail
@@ -194,6 +208,13 @@ export const updateMeasurement = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'Mesure introuvable.',
+      });
+    }
+
+    if (req.user?.role === 'operator' && String(beforeMeasurement.createdBy || '') !== String(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé: vous ne pouvez modifier que vos propres mesures.',
       });
     }
 
@@ -241,7 +262,7 @@ export const updateMeasurement = async (req, res, next) => {
 
 export const deleteMeasurement = async (req, res, next) => {
   try {
-    const measurement = await Measurement.findByIdAndDelete(req.params.id);
+    const measurement = await Measurement.findById(req.params.id);
 
     if (!measurement) {
       return res.status(404).json({
@@ -249,6 +270,15 @@ export const deleteMeasurement = async (req, res, next) => {
         message: 'Mesure introuvable.',
       });
     }
+
+    if (req.user?.role === 'operator' && String(measurement.createdBy || '') !== String(req.user._id)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé: vous ne pouvez supprimer que vos propres mesures.',
+      });
+    }
+
+    await measurement.deleteOne();
 
     // Log to audit trail
     const process = await Process.findById(measurement.process);
@@ -344,6 +374,7 @@ export const importMeasurementsCsv = async (req, res, next) => {
         value: numericValue,
         date: parsedDate,
         comment: commentRaw || '',
+        createdBy: req.user?._id,
       });
 
       imported.push(measurement);

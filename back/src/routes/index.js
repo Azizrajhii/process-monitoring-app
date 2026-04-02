@@ -20,6 +20,5 @@ router.use('/measurements', measurementsRoutes);
 router.use('/alerts', alertsRoutes);
 router.use('/audit', auditRoutes);
 router.use('/predict', predictRoutes);
-router.use('/api', auditRoutes);
 
 export default router;

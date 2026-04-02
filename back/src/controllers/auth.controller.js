@@ -1,8 +1,17 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { sendResetPasswordEmail } from '../services/email.service.js';
+
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('La variable JWT_SECRET est requise.');
+  }
+  return secret;
+};
 
 const generateToken = (user) =>
   jwt.sign(
@@ -11,7 +20,7 @@ const generateToken = (user) =>
       email: user.email,
       role: user.role,
     },
-    process.env.JWT_SECRET || 'dev-jwt-secret-change-me',
+    getJwtSecret(),
     {
       expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     },
@@ -21,6 +30,33 @@ const hashResetToken = (token) =>
   crypto.createHash('sha256').update(token).digest('hex');
 
 const ALLOWED_ROLES = ['operator', 'quality', 'manager'];
+const googleClient = new OAuth2Client();
+
+const verifyGoogleIdToken = async (idToken) => {
+  const googleClientId = process.env.GOOGLE_CLIENT_ID;
+
+  if (!googleClientId) {
+    throw new Error('La variable GOOGLE_CLIENT_ID est requise pour Google auth.');
+  }
+
+  const ticket = await googleClient.verifyIdToken({
+    idToken,
+    audience: googleClientId,
+  });
+
+  const payload = ticket.getPayload();
+
+  if (!payload?.sub || !payload?.email) {
+    throw new Error('ID token Google invalide.');
+  }
+
+  return {
+    googleId: payload.sub,
+    email: payload.email.toLowerCase(),
+    fullName: payload.name || payload.email.split('@')[0],
+    emailVerified: payload.email_verified === true,
+  };
+};
 
 export const register = async (req, res, next) => {
   try {
@@ -474,16 +510,35 @@ export const updateMe = async (req, res, next) => {
   }
 };
 
-// ─── OAuth Login (Google & Facebook) ──────────────────────────────────────────
+// ─── OAuth Login (Google) ─────────────────────────────────────────────────────
 
 export const loginWithGoogle = async (req, res, next) => {
   try {
-    const { googleId, email, fullName, role } = req.body;
+    const { idToken, role } = req.body;
 
-    if (!googleId || !email) {
+    if (!idToken) {
       return res.status(400).json({
         success: false,
-        message: 'googleId et email sont requis.',
+        message: 'idToken est requis.',
+      });
+    }
+
+    let googleProfile;
+    try {
+      googleProfile = await verifyGoogleIdToken(idToken);
+    } catch (_error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Token Google invalide ou non verifie.',
+      });
+    }
+
+    const { googleId, email, fullName, emailVerified } = googleProfile;
+
+    if (!emailVerified) {
+      return res.status(401).json({
+        success: false,
+        message: 'Email Google non verifie.',
       });
     }
 
@@ -526,60 +581,6 @@ export const loginWithGoogle = async (req, res, next) => {
     return res.status(200).json({
       success: true,
       message: 'Connexion avec Google reussie.',
-      token: generateToken(user),
-      user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        role: user.role,
-        isActive: user.isActive,
-      },
-    });
-  } catch (error) {
-    return next(error);
-  }
-};
-
-export const loginWithFacebook = async (req, res, next) => {
-  try {
-    const { facebookId, email, fullName } = req.body;
-
-    if (!facebookId) {
-      return res.status(400).json({
-        success: false,
-        message: 'facebookId est requis.',
-      });
-    }
-
-    const normalizedEmail = email
-      ? email.toLowerCase()
-      : `facebook_${facebookId}@no-email.local`;
-
-    // Find or create user with Facebook ID
-    let user = await User.findOne({ facebookId });
-
-    if (!user) {
-      // Check if email exists from another provider
-      user = await User.findOne({ email: normalizedEmail });
-
-      if (!user) {
-        // Create new user
-        user = await User.create({
-          facebookId,
-          fullName: fullName || normalizedEmail.split('@')[0],
-          email: normalizedEmail,
-          role: 'operator',
-        });
-      } else {
-        // Link Facebook ID to existing user
-        user.facebookId = facebookId;
-        await user.save();
-      }
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: 'Connexion avec Facebook reussie.',
       token: generateToken(user),
       user: {
         id: user._id,

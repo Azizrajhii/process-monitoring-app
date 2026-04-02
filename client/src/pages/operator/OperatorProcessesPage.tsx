@@ -164,8 +164,6 @@ export default function OperatorProcessesPage() {
                 <TableCell><strong>Ligne</strong></TableCell>
                 <TableCell align="center"><strong>LSL</strong></TableCell>
                 <TableCell align="center"><strong>USL</strong></TableCell>
-                <TableCell align="center"><strong>Cp cible</strong></TableCell>
-                <TableCell align="center"><strong>Cpk cible</strong></TableCell>
                 <TableCell align="center"><strong>Statut</strong></TableCell>
                 <TableCell align="center" width={100}><strong>Actions</strong></TableCell>
               </TableRow>
@@ -173,7 +171,7 @@ export default function OperatorProcessesPage() {
             <TableBody>
               {processes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                     <Typography color="text.secondary">
                       Aucun processus trouvé.
                     </Typography>
@@ -188,8 +186,6 @@ export default function OperatorProcessesPage() {
                     <TableCell>{process.productionLine}</TableCell>
                     <TableCell align="center">{toFixed2(process.lsl)}</TableCell>
                     <TableCell align="center">{toFixed2(process.usl)}</TableCell>
-                    <TableCell align="center">{toFixed2(process.cpTarget)}</TableCell>
-                    <TableCell align="center">{toFixed2(process.cpkTarget)}</TableCell>
                     <TableCell align="center">
                       <Chip
                         size="small"

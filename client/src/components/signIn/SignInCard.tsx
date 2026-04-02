@@ -12,9 +12,9 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { GoogleIcon, FacebookIcon } from '../CustomIcons';
+import { GoogleIcon } from '../CustomIcons';
 import { useAuth } from '../../context/AuthContext';
-import { ensureFacebookSdk, ensureGoogleSdk } from '../../utils/oauthSdk';
+import { ensureGoogleSdk } from '../../utils/oauthSdk';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -36,7 +36,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
 
 export default function SignInCard() {
   const navigate = useNavigate();
-  const { login, loginWithGoogle, loginWithFacebook } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
   const [passwordError, setPasswordError] = React.useState(false);
@@ -111,124 +111,30 @@ export default function SignInCard() {
         return;
       }
 
-      await new Promise<void>((resolve) => {
-        const tokenClient = google.accounts.oauth2.initTokenClient({
+      const credential = await new Promise<string>((resolve, reject) => {
+        google.accounts.id.initialize({
           client_id: googleClientId,
-          scope: 'openid email profile',
-          callback: async (tokenResponse: any) => {
-            try {
-              if (tokenResponse?.error) {
-                const origin = window.location.origin;
-                if (tokenResponse.error === 'invalid_client') {
-                  setServerError(`Client Google invalide pour l'origine ${origin}. Ajoutez cette origine dans Google Cloud Console > OAuth 2.0 Client IDs > Authorized JavaScript origins.`);
-                } else {
-                  setServerError(`Google Sign-In indisponible: ${tokenResponse.error}.`);
-                }
-                resolve();
-                return;
-              }
-
-              const accessToken = tokenResponse?.access_token;
-              if (!accessToken) {
-                setServerError('Aucun jeton Google recu. Verifiez la configuration OAuth du client web.');
-                resolve();
-                return;
-              }
-
-              const profileResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
-              });
-
-              if (!profileResponse.ok) {
-                setServerError('Impossible de recuperer le profil Google.');
-                resolve();
-                return;
-              }
-
-              const profile = (await profileResponse.json()) as {
-                sub?: string;
-                email?: string;
-                name?: string;
-              };
-
-              if (!profile?.sub || !profile?.email) {
-                setServerError('Donnees Google invalides. Verifiez les scopes et la configuration OAuth.');
-                resolve();
-                return;
-              }
-
-              await loginWithGoogle(profile.sub, profile.email, profile.name || profile.email);
-              navigate('/');
-            } catch (err: any) {
-              setServerError(err?.response?.data?.message || 'Erreur lors de la connexion Google.');
-            } finally {
-              resolve();
+          callback: (response: any) => {
+            if (response?.credential) {
+              resolve(response.credential);
+              return;
             }
+            reject(new Error('Aucun ID token Google recu.'));
           },
-          error_callback: (oauthError: any) => {
-            const reason = oauthError?.type || oauthError?.message || 'unknown_reason';
-            setServerError(`Google Sign-In indisponible: ${reason}.`);
-            resolve();
-          },
+          ux_mode: 'popup',
         });
 
-        tokenClient.requestAccessToken({ prompt: 'consent' });
-      });
-    } catch (err: any) {
-      setServerError('Erreur lors de la connexion Google.');
-    } finally {
-      setOAuthLoading(false);
-    }
-  };
-
-  const handleFacebookSignIn = async () => {
-    try {
-      setOAuthLoading(true);
-      setServerError('');
-
-      await ensureFacebookSdk();
-
-      const fb = (window as any).FB;
-      if (!fb) {
-        setServerError('Facebook SDK not loaded. Please refresh the page.');
-        return;
-      }
-
-      const facebookAppId = import.meta.env.VITE_FACEBOOK_APP_ID;
-      if (!facebookAppId || facebookAppId === 'YOUR_FACEBOOK_APP_ID') {
-        setServerError('Configurez VITE_FACEBOOK_APP_ID dans client/.env puis redemarrez le frontend.');
-        return;
-      }
-
-      fb.init({
-        appId: facebookAppId,
-        cookie: true,
-        xfbml: true,
-        version: 'v18.0',
-      });
-
-      fb.login(
-        async (response: any) => {
-          if (response.status === 'connected') {
-            // Get user info
-            fb.api('/me', { fields: 'id,name,email' }, async (userInfo: any) => {
-              try {
-                await loginWithFacebook(userInfo.id, userInfo.email, userInfo.name);
-                navigate('/');
-              } catch (err: any) {
-                setServerError(err?.response?.data?.message || 'Erreur lors de la connexion Facebook.');
-              }
-            });
-          } else {
-            setServerError('Facebook login was cancelled.');
+        google.accounts.id.prompt((notification: any) => {
+          if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) {
+            reject(new Error('Google Sign-In indisponible sur ce navigateur.'));
           }
-        },
-        { scope: 'public_profile,email' },
-      );
+        });
+      });
+
+      await loginWithGoogle(credential);
+      navigate('/');
     } catch (err: any) {
-      setServerError('Erreur lors de la connexion Facebook.');
+      setServerError(err?.response?.data?.message || 'Erreur lors de la connexion Google.');
     } finally {
       setOAuthLoading(false);
     }
@@ -329,15 +235,6 @@ export default function SignInCard() {
           startIcon={<GoogleIcon />}
         >
           {oauthLoading ? 'Connexion...' : 'Sign in with Google'}
-        </Button>
-        <Button
-          fullWidth
-          variant="outlined"
-          onClick={handleFacebookSignIn}
-          disabled={oauthLoading}
-          startIcon={<FacebookIcon />}
-        >
-          {oauthLoading ? 'Connexion...' : 'Sign in with Facebook'}
         </Button>
       </Box>
     </Card>

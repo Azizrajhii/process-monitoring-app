@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
+import { corsOrigin } from '../config/cors.js';
 
 let ioInstance = null;
 const getJwtSecret = () => {
@@ -13,8 +14,9 @@ const getJwtSecret = () => {
 export const initRealtime = (httpServer) => {
   ioInstance = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      origin: corsOrigin,
       methods: ['GET', 'POST'],
+      credentials: true,
     },
   });
 

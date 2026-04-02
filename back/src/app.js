@@ -5,12 +5,14 @@ import apiRoutes from './routes/index.js';
 import { notFound } from './middlewares/notFound.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { auditMiddleware } from './services/audit.service.js';
+import { corsOrigin } from './config/cors.js';
 
 const app = express();
 
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: corsOrigin,
+    credentials: true,
   }),
 );
 app.use(express.json());

@@ -22,7 +22,7 @@ const getSocketUrl = () => {
   const fromEnv = import.meta.env.VITE_SOCKET_URL;
   if (fromEnv) return fromEnv;
 
-  const apiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+  const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://process-monitoring-app-3.onrender.com/api';
   return apiBase.endsWith('/api') ? apiBase.slice(0, -4) : apiBase;
 };
 

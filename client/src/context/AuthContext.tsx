@@ -16,8 +16,7 @@ interface AuthContextValue {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  loginWithGoogle: (googleId: string, email: string, fullName: string, role?: UserRole) => Promise<void>;
-  loginWithFacebook: (facebookId: string, email: string, fullName: string) => Promise<void>;
+  loginWithGoogle: (idToken: string, role?: UserRole) => Promise<void>;
   refreshUser: () => Promise<void>;
   logout: () => void;
   hasRole: (...roles: UserRole[]) => boolean;
@@ -58,17 +57,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(newUser);
   };
 
-  const loginWithGoogle = async (googleId: string, email: string, fullName: string, role?: UserRole) => {
-    const res = await api.post('/auth/google', { googleId, email, fullName, role });
-    const { token: newToken, user: newUser } = res.data;
-    localStorage.setItem('token', newToken);
-    api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-    setToken(newToken);
-    setUser(newUser);
-  };
-
-  const loginWithFacebook = async (facebookId: string, email: string, fullName: string) => {
-    const res = await api.post('/auth/facebook', { facebookId, email, fullName });
+  const loginWithGoogle = async (idToken: string, role?: UserRole) => {
+    const res = await api.post('/auth/google', { idToken, role });
     const { token: newToken, user: newUser } = res.data;
     localStorage.setItem('token', newToken);
     api.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
@@ -92,7 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const hasRole = (...roles: UserRole[]) => !!user && roles.includes(user.role);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, loginWithFacebook, refreshUser, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, refreshUser, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );

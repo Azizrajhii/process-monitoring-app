@@ -42,13 +42,3 @@ export const ensureGoogleSdk = async () => {
   await loadScriptOnce('google-gsi-sdk', 'https://accounts.google.com/gsi/client');
   await waitFor(() => Boolean((window as any).google?.accounts?.id));
 };
-
-export const ensureFacebookSdk = async () => {
-  if ((window as any).FB) return;
-
-  await loadScriptOnce(
-    'facebook-jssdk',
-    'https://connect.facebook.net/fr_FR/sdk.js#xfbml=1&version=v18.0',
-  );
-  await waitFor(() => Boolean((window as any).FB));
-};

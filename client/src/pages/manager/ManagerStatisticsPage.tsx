@@ -1,8 +1,14 @@
 import * as React from 'react';
 import Predictor from '../../components/Predictor';
+import AutoGraphIcon from '@mui/icons-material/AutoGraph';
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
+import Card from '@mui/material/Card';
+import CardContent from '@mui/material/CardContent';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import Grid from '@mui/material/Grid';
 import MenuItem from '@mui/material/MenuItem';
@@ -63,9 +69,6 @@ interface ProcessReportResponse {
 }
 
 const toFixed2 = (value: number) => Number.isFinite(value) ? value.toFixed(2) : '0.00';
-
-
-
 export default function ManagerStatisticsPage() {
   const [loading, setLoading] = React.useState(true);
   const [reportLoading, setReportLoading] = React.useState(false);
@@ -128,18 +131,44 @@ export default function ManagerStatisticsPage() {
   const capable = report?.conclusion?.status === 'capable';
   const cpValue = stats?.cp;
   const cpkValue = stats?.cpk;
+  const isInsufficientData = report?.conclusion?.status === 'insufficient_data';
+  const conclusionSeverity = isInsufficientData ? 'info' : capable ? 'success' : 'warning';
+  const conclusionLabel = isInsufficientData ? 'Donnees insuffisantes' : capable ? 'Process capable' : 'Process non capable';
+  const openAlertsCount = report?.alerts.filter((item) => item.status === 'not_treated').length ?? 0;
+  const totalAlertsCount = report?.alerts.length ?? 0;
   const analysisDate = report?.analysisDate
     ? new Date(report.analysisDate).toLocaleDateString('fr-FR')
     : new Date().toLocaleDateString('fr-FR');
 
+  const kpiCards = [
+    { label: 'Nombre mesures', value: String(stats?.sampleSize ?? 0) },
+    { label: 'Moyenne', value: toFixed2(Number(stats?.mean ?? 0)) },
+    { label: 'Ecart type', value: toFixed2(Number(stats?.stdDev ?? 0)) },
+    { label: 'Cp', value: cpValue === null || cpValue === undefined ? 'N/A' : toFixed2(cpValue) },
+    { label: 'Cpk', value: cpkValue === null || cpkValue === undefined ? 'N/A' : toFixed2(cpkValue) },
+  ];
+
   return (
-    <Stack spacing={2.5}>
-      <Box>
-        <Typography variant="h4" fontWeight={800}>Rapports Manager</Typography>
-        <Typography color="text.secondary">
-          Analyse detaillee des processus avec conclusion de capacite.
-        </Typography>
-      </Box>
+    <Stack spacing={2.5} sx={{ pb: 2 }}>
+      <Paper
+        variant="outlined"
+        sx={{
+          p: { xs: 2, md: 2.5 },
+          borderRadius: 3,
+          borderColor: 'divider',
+          backgroundColor: 'background.paper',
+        }}
+      >
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.8} alignItems={{ md: 'center' }} justifyContent="space-between">
+          <Box>
+            <Typography variant="h4" fontWeight={800}>Rapports Manager</Typography>
+            <Typography color="text.secondary">
+              Lecture operationnelle des process, capacite et prediction machine learning.
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary">{processes.length} process</Typography>
+        </Stack>
+      </Paper>
 
       {error && <Alert severity="warning">{error}</Alert>}
 
@@ -149,9 +178,17 @@ export default function ManagerStatisticsPage() {
         </Box>
       ) : (
         <>
-          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
+          <Paper
+            variant="outlined"
+            sx={{
+              p: 2.5,
+              borderRadius: 3,
+              borderColor: 'divider',
+              backgroundColor: 'background.paper',
+            }}
+          >
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ sm: 'center' }}>
-              <Typography variant="subtitle1" fontWeight={700}>Selection du process</Typography>
+              <Typography variant="subtitle1" fontWeight={800}>Selection du process</Typography>
               <FormControl size="small" sx={{ minWidth: 320 }}>
                 <Select
                   value={selectedProcessId}
@@ -164,6 +201,7 @@ export default function ManagerStatisticsPage() {
                   ))}
                 </Select>
               </FormControl>
+              {selectedProcessId && <AutoGraphIcon color="action" sx={{ ml: { sm: 'auto' } }} />}
             </Stack>
           </Paper>
 
@@ -173,40 +211,39 @@ export default function ManagerStatisticsPage() {
             </Box>
           ) : (
             <>
-              <Grid container spacing={2} columns={12}>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, height: '100%' }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
-                      Informations du process
-                    </Typography>
-                    <Stack spacing={0.7}>
-                      <Typography><strong>Nom process:</strong> {processInfo?.name || '-'}</Typography>
-                      <Typography><strong>Date analyse:</strong> {analysisDate}</Typography>
-                      <Typography><strong>LSL:</strong> {toFixed2(Number(processInfo?.lsl ?? 0))}</Typography>
-                      <Typography><strong>USL:</strong> {toFixed2(Number(processInfo?.usl ?? 0))}</Typography>
-                    </Stack>
-                  </Paper>
-                </Grid>
-                <Grid size={{ xs: 12, md: 6 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, height: '100%' }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
-                      Statistiques
-                    </Typography>
-                    <Stack spacing={0.7}>
-                      <Typography><strong>Nombre mesures:</strong> {stats?.sampleSize ?? 0}</Typography>
-                      <Typography><strong>Moyenne:</strong> {toFixed2(Number(stats?.mean ?? 0))}</Typography>
-                      <Typography><strong>Ecart type:</strong> {toFixed2(Number(stats?.stdDev ?? 0))}</Typography>
-                      <Typography><strong>Cp:</strong> {cpValue === null || cpValue === undefined ? 'N/A' : toFixed2(cpValue)}</Typography>
-                      <Typography><strong>Cpk:</strong> {cpkValue === null || cpkValue === undefined ? 'N/A' : toFixed2(cpkValue)}</Typography>
-                    </Stack>
-                  </Paper>
-                </Grid>
+              <Grid container spacing={2} columns={15}>
+                {kpiCards.map((item) => (
+                  <Grid key={item.label} size={{ xs: 15, sm: 7.5, md: 3 }}>
+                    <Card
+                      variant="outlined"
+                      sx={{
+                        height: '100%',
+                        borderRadius: 3,
+                        borderColor: 'divider',
+                        backgroundColor: 'background.paper',
+                      }}
+                    >
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">{item.label}</Typography>
+                        <Typography variant="h5" fontWeight={900} sx={{ mt: 0.4 }}>{item.value}</Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
               </Grid>
 
               <Grid container spacing={2} columns={12}>
                 <Grid size={{ xs: 12, lg: 7 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2.5,
+                      borderRadius: 3,
+                      borderColor: 'divider',
+                      backgroundColor: 'background.paper',
+                    }}
+                  >
+                    <Typography variant="h6" fontWeight={800} sx={{ mb: 1.5 }}>
                       SPC chart
                     </Typography>
                     <LineChart
@@ -217,17 +254,34 @@ export default function ManagerStatisticsPage() {
                       grid={{ horizontal: true }}
                     />
                   </Paper>
-                    {/* Prédiction ML intégrée */}
-                    <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3, mt: 2 }}>
-                      <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
+                    {/* Prediction ML integree */}
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        p: 2.5,
+                        borderRadius: 3,
+                        mt: 2,
+                        borderColor: 'divider',
+                        backgroundColor: 'background.paper',
+                      }}
+                    >
+                      <Typography variant="h6" fontWeight={800} sx={{ mb: 1.5 }}>
                         Prédiction Machine Learning (valeurs récentes)
                       </Typography>
-                      <Predictor initialValues={latestValues} initialUsl={uslValue} />
+                      <Predictor initialValues={latestValues} initialUsl={uslValue} showMeasurementsInput={false} showUslInput={false} />
                     </Paper>
                 </Grid>
                 <Grid size={{ xs: 12, lg: 5 }}>
-                  <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
-                    <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2.5,
+                      borderRadius: 3,
+                      borderColor: 'divider',
+                      backgroundColor: 'background.paper',
+                    }}
+                  >
+                    <Typography variant="h6" fontWeight={800} sx={{ mb: 1.5 }}>
                       Histogram / Distribution
                     </Typography>
                     <BarChart
@@ -238,42 +292,144 @@ export default function ManagerStatisticsPage() {
                       grid={{ horizontal: true }}
                     />
                   </Paper>
+
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2.2,
+                      borderRadius: 3,
+                      mt: 2,
+                      borderColor: 'divider',
+                    }}
+                  >
+                    <Typography variant="subtitle1" fontWeight={800} sx={{ mb: 1.2 }}>
+                      Informations du process
+                    </Typography>
+                    <Stack spacing={1}>
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography color="text.secondary">Nom process</Typography>
+                        <Typography fontWeight={700}>{processInfo?.name || '-'}</Typography>
+                      </Stack>
+                      <Divider />
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography color="text.secondary">Date analyse</Typography>
+                        <Typography fontWeight={700}>{analysisDate}</Typography>
+                      </Stack>
+                      <Divider />
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography color="text.secondary">LSL</Typography>
+                        <Typography fontWeight={700}>{toFixed2(Number(processInfo?.lsl ?? 0))}</Typography>
+                      </Stack>
+                      <Divider />
+                      <Stack direction="row" justifyContent="space-between">
+                        <Typography color="text.secondary">USL</Typography>
+                        <Typography fontWeight={700}>{toFixed2(Number(processInfo?.usl ?? 0))}</Typography>
+                      </Stack>
+                    </Stack>
+                  </Paper>
                 </Grid>
               </Grid>
 
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 1 }}>
-                  Conclusion
-                </Typography>
-                <Alert severity={capable ? 'success' : 'warning'}>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  borderRadius: 3,
+                  borderColor: 'divider',
+                  backgroundColor: 'background.paper',
+                }}
+              >
+                <Stack
+                  direction={{ xs: 'column', sm: 'row' }}
+                  alignItems={{ sm: 'center' }}
+                  justifyContent="space-between"
+                  spacing={1.2}
+                  sx={{ mb: 1.2 }}
+                >
+                  <Typography variant="h6" fontWeight={800}>
+                    Conclusion
+                  </Typography>
+                  <Chip
+                    size="small"
+                    label={conclusionLabel}
+                    color={conclusionSeverity}
+                    variant="outlined"
+                    sx={{ fontWeight: 700 }}
+                  />
+                </Stack>
+                <Alert severity={conclusionSeverity} sx={{ mb: 1.2 }}>
                   {report.conclusion.message}
                 </Alert>
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
+                  <Box sx={{ px: 1.2, py: 0.8, borderRadius: 2, bgcolor: 'action.hover' }}>
+                    <Typography variant="caption" color="text.secondary">Date analyse</Typography>
+                    <Typography variant="body2" fontWeight={700}>{analysisDate}</Typography>
+                  </Box>
+                  <Box sx={{ px: 1.2, py: 0.8, borderRadius: 2, bgcolor: 'action.hover' }}>
+                    <Typography variant="caption" color="text.secondary">Cp / Cpk</Typography>
+                    <Typography variant="body2" fontWeight={700}>
+                      {cpValue === null || cpValue === undefined ? 'N/A' : toFixed2(cpValue)} / {cpkValue === null || cpkValue === undefined ? 'N/A' : toFixed2(cpkValue)}
+                    </Typography>
+                  </Box>
+                </Stack>
               </Paper>
 
-              <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 3 }}>
-                <Typography variant="h6" fontWeight={700} sx={{ mb: 1.5 }}>
-                  Alertes process
-                </Typography>
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2.5,
+                  borderRadius: 3,
+                  borderColor: 'divider',
+                }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+                  <WarningAmberIcon color="warning" fontSize="small" />
+                  <Typography variant="h6" fontWeight={800}>
+                    Alertes process
+                  </Typography>
+                  <Chip
+                    size="small"
+                    color={openAlertsCount > 0 ? 'warning' : 'success'}
+                    label={`${openAlertsCount} ouvertes / ${totalAlertsCount}`}
+                    variant="outlined"
+                    sx={{ ml: 'auto', fontWeight: 700 }}
+                  />
+                </Stack>
                 <Stack spacing={1}>
                   {report.alerts.length === 0 && (
                     <Typography color="text.secondary">Aucune alerte pour ce process.</Typography>
                   )}
-                  {report.alerts.map((item) => (
-                    <Alert 
-                      key={item._id || Math.random()} 
-                      severity={
-                        item.status === 'system' ? 'info' :
-                        item.status === 'not_treated' ? 'warning' : 
-                        'success'
-                      }
-                    >
-                      <strong>
-                        [{item.status === 'system' ? '🤖 Système' : item.status === 'not_treated' ? '⚠️ Ouvert' : '✓ Traité'}]
-                      </strong>
-                      {' '}
-                      {new Date(item.date).toLocaleString('fr-FR')} - {item.message}
-                    </Alert>
-                  ))}
+                  {report.alerts.map((item, index) => {
+                    const severity = item.status === 'system' ? 'info' : item.status === 'not_treated' ? 'warning' : 'success';
+                    const statusLabel = item.status === 'system' ? 'Systeme' : item.status === 'not_treated' ? 'Ouvert' : 'Traite';
+                    return (
+                      <Box
+                        key={item._id || `${item.date}-${index}`}
+                        sx={{
+                          p: 1.3,
+                          borderRadius: 2,
+                          border: '1px solid',
+                          borderColor: 'divider',
+                          bgcolor: 'background.paper',
+                        }}
+                      >
+                        <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+                          <Chip
+                            size="small"
+                            color={severity}
+                            label={statusLabel}
+                            sx={{ fontWeight: 700, width: 'fit-content' }}
+                          />
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(item.date).toLocaleString('fr-FR')}
+                          </Typography>
+                        </Stack>
+                        <Typography variant="body2" sx={{ mt: 0.8 }}>
+                          {item.message}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
                 </Stack>
               </Paper>
             </>

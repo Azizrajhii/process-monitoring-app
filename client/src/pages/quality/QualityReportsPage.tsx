@@ -198,6 +198,25 @@ export default function QualityReportsPage() {
   const cpSeries = history.map((item) => (item.cp === null ? 0 : item.cp));
   const labels = history.map((item) => item.label);
 
+  const spcRawLabels = report?.charts?.spc?.labels || [];
+  const spcRawValues = report?.charts?.spc?.values || [];
+  const spcMaxPoints = 40;
+  const spcStep = Math.max(1, Math.ceil(spcRawValues.length / spcMaxPoints));
+  const spcPlotLabels = spcRawLabels.filter((_, idx) => idx % spcStep === 0);
+  const spcPlotValues = spcRawValues.filter((_, idx) => idx % spcStep === 0);
+  const spcShowMarks = spcPlotValues.length <= 24;
+  const spcVisibleValues = spcPlotValues.length > 0 ? spcPlotValues : spcRawValues;
+  const spcMean = report?.statistics.mean ?? 0;
+  const spcLsl = report?.charts?.spc?.lsl ?? 0;
+  const spcUsl = report?.charts?.spc?.usl ?? 0;
+  const spcMin = spcVisibleValues.length > 0 ? Math.min(...spcVisibleValues, spcMean, spcLsl, spcUsl) : Math.min(spcMean, spcLsl, spcUsl);
+  const spcMax = spcVisibleValues.length > 0 ? Math.max(...spcVisibleValues, spcMean, spcLsl, spcUsl) : Math.max(spcMean, spcLsl, spcUsl, 1);
+  const spcRange = Math.max(spcMax - spcMin, 1);
+  const spcPadding = Math.max(spcRange * 0.15, 0.5);
+  const spcYMin = Math.floor((spcMin - spcPadding) * 10) / 10;
+  const spcYMax = Math.ceil((spcMax + spcPadding) * 10) / 10;
+  const spcTickStep = spcRange <= 2 ? 0.5 : spcRange <= 5 ? 1 : spcRange <= 20 ? 2 : 5;
+
   return (
     <Stack spacing={2.5}>
       <Paper
@@ -380,19 +399,40 @@ export default function QualityReportsPage() {
                   <Typography variant="h6" fontWeight={900} sx={{ mb: 1.5 }}>
                     SPC Chart (X-bar) — Contrôle process
                   </Typography>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 1.5 }}>
+                    <Chip
+                      size="small"
+                      label={`LSL: ${toFixed2(spcLsl)}`}
+                      variant="outlined"
+                      sx={{ fontWeight: 700, borderColor: 'error.light', color: 'error.main' }}
+                    />
+                    <Chip
+                      size="small"
+                      label={`Moyenne: ${toFixed2(spcMean)}`}
+                      variant="outlined"
+                      sx={{ fontWeight: 700, borderColor: 'primary.light', color: 'primary.main' }}
+                    />
+                    <Chip
+                      size="small"
+                      label={`USL: ${toFixed2(spcUsl)}`}
+                      variant="outlined"
+                      sx={{ fontWeight: 700, borderColor: 'error.light', color: 'error.main' }}
+                    />
+                  </Stack>
                   <LineChart
-                    xAxis={[{ scaleType: 'point', data: report.charts.spc.labels }]}
+                    xAxis={[{ scaleType: 'point', data: spcPlotLabels }]}
+                    yAxis={[{ min: spcYMin, max: spcYMax, tickMinStep: spcTickStep }]}
                     series={[
                       {
-                        data: report.charts.spc.values,
+                        data: spcPlotValues,
                         label: 'Valeur',
                         color: '#7c4dff',
-                        showMark: true,
+                        showMark: spcShowMarks,
                         curve: 'linear',
                         area: false,
                       },
                       {
-                        data: Array(report.charts.spc.values.length).fill(report.statistics.mean),
+                        data: Array(spcPlotValues.length).fill(spcMean),
                         label: 'Moyenne',
                         color: '#1976d2',
                         showMark: false,
@@ -400,26 +440,31 @@ export default function QualityReportsPage() {
                         area: false,
                       },
                       {
-                        data: Array(report.charts.spc.values.length).fill(report.charts.spc.lsl),
+                        data: Array(spcPlotValues.length).fill(spcLsl),
                         label: 'LSL',
-                        color: 'rgba(144,164,174,0.9)',
+                        color: '#d32f2f',
                         showMark: false,
                         curve: 'linear',
                         area: false,
                       },
                       {
-                        data: Array(report.charts.spc.values.length).fill(report.charts.spc.usl),
+                        data: Array(spcPlotValues.length).fill(spcUsl),
                         label: 'USL',
-                        color: 'rgba(144,164,174,0.9)',
+                        color: '#d32f2f',
                         showMark: false,
                         curve: 'linear',
                         area: false,
                       },
                     ]}
-                    height={320}
-                    margin={{ left: 45, right: 20, top: 20, bottom: 20 }}
+                    height={360}
+                    margin={{ left: 45, right: 24, top: 20, bottom: 28 }}
                     grid={{ horizontal: true }}
                   />
+                  {spcStep > 1 && (
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      Affichage adapte: 1 point sur {spcStep} pour ameliorer la lisibilite.
+                    </Typography>
+                  )}
                 </Paper>
               )}
 
@@ -439,8 +484,8 @@ export default function QualityReportsPage() {
                   <Typography variant="h5" fontWeight={900} sx={{ mb: 2, letterSpacing: 0.2 }}>
                     <ScienceIcon sx={{ mr: 1, verticalAlign: 'middle', color: 'primary.main' }} /> Alertes intelligentes
                   </Typography>
-                  {report.alerts.map((alert, idx) => (
-                    <Fade in timeout={700}>
+                  {report.alerts.map((alert) => (
+                    <Fade key={`${alert.type}-${alert.date || 'no-date'}-${alert.message}`} in timeout={700}>
                       <Alert
                         icon={alert.type === 'cpk_low' ? <ErrorOutlineIcon sx={{ color: '#d32f2f' }} /> : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? <ErrorOutlineIcon sx={{ color: '#d32f2f' }} /> : alert.type === 'trend_up' ? <TrendingUpIcon sx={{ color: '#fbc02d' }} /> : alert.type === 'trend_down' ? <TrendingDownIcon sx={{ color: '#fbc02d' }} /> : <WarningAmberIcon sx={{ color: '#ff9800' }} />}
                         severity={alert.type === 'cpk_low' ? 'error' : alert.type === 'lsl_breach' || alert.type === 'usl_breach' ? 'error' : alert.type === 'trend_up' ? 'warning' : alert.type === 'trend_down' ? 'warning' : 'warning'}

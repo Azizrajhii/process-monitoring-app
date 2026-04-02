@@ -53,7 +53,7 @@ const actionOptions = [
 ];
 
 const entityOptions = ['ALL', 'Process', 'Measurement', 'Alert', 'CorrectiveAction', 'User'];
-const formatAction = (value: string) => value.replaceAll('_', ' ');
+const formatAction = (value: string) => value.split('_').join(' ');
 
 export default function AuditTrailPage() {
   const [loading, setLoading] = React.useState(true);

@@ -2,6 +2,13 @@ import jwt from 'jsonwebtoken';
 import { Server } from 'socket.io';
 
 let ioInstance = null;
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('La variable JWT_SECRET est requise.');
+  }
+  return secret;
+};
 
 export const initRealtime = (httpServer) => {
   ioInstance = new Server(httpServer, {
@@ -18,7 +25,7 @@ export const initRealtime = (httpServer) => {
         return next(new Error('Missing auth token'));
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'dev-jwt-secret-change-me');
+      const decoded = jwt.verify(token, getJwtSecret());
       socket.user = decoded;
       return next();
     } catch (_error) {

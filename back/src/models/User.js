@@ -38,11 +38,6 @@ const userSchema = new mongoose.Schema(
       sparse: true,
       unique: true,
     },
-    facebookId: {
-      type: String,
-      sparse: true,
-      unique: true,
-    },
   },
   {
     timestamps: true,

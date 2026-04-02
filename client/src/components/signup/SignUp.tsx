@@ -182,23 +182,26 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
       }
 
       const credential = await new Promise<string>((resolve, reject) => {
+        let settled = false;
         google.accounts.id.initialize({
           client_id: googleClientId,
           callback: (response: any) => {
+            settled = true;
             if (response?.credential) {
               resolve(response.credential);
               return;
             }
             reject(new Error('Aucun ID token Google recu.'));
           },
-          ux_mode: 'popup',
         });
 
-        google.accounts.id.prompt((notification: any) => {
-          if (notification?.isNotDisplayed?.() || notification?.isSkippedMoment?.()) {
+        google.accounts.id.prompt();
+
+        window.setTimeout(() => {
+          if (!settled) {
             reject(new Error('Google Sign-In indisponible sur ce navigateur.'));
           }
-        });
+        }, 10000);
       });
 
       await loginWithGoogle(credential, role || undefined);

@@ -11,10 +11,10 @@ import Link from '@mui/material/Link';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { styled } from '@mui/material/styles';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
 import { GoogleIcon } from '../CustomIcons';
 import { useAuth } from '../../context/AuthContext';
-import { ensureGoogleSdk } from '../../utils/oauthSdk';
+import { ensureGoogleSdk, requestGoogleCredential } from '../../utils/oauthSdk';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -36,6 +36,7 @@ const Card = styled(MuiCard)(({ theme }) => ({
 
 export default function SignInCard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, loginWithGoogle } = useAuth();
   const [emailError, setEmailError] = React.useState(false);
   const [emailErrorMessage, setEmailErrorMessage] = React.useState('');
@@ -44,6 +45,7 @@ export default function SignInCard() {
   const [serverError, setServerError] = React.useState('');
   const [loading, setLoading] = React.useState(false);
   const [oauthLoading, setOAuthLoading] = React.useState(false);
+  const registrationSuccess = searchParams.get('registered') === '1';
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -111,33 +113,14 @@ export default function SignInCard() {
         return;
       }
 
-      const credential = await new Promise<string>((resolve, reject) => {
-        let settled = false;
-        google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: (response: any) => {
-            settled = true;
-            if (response?.credential) {
-              resolve(response.credential);
-              return;
-            }
-            reject(new Error('Aucun ID token Google recu.'));
-          },
-        });
-
-        google.accounts.id.prompt();
-
-        window.setTimeout(() => {
-          if (!settled) {
-            reject(new Error('Google Sign-In indisponible sur ce navigateur.'));
-          }
-        }, 10000);
-      });
+      const credential = await requestGoogleCredential(googleClientId);
 
       await loginWithGoogle(credential);
       navigate('/');
     } catch (err: any) {
-      setServerError(err?.response?.data?.message || 'Erreur lors de la connexion Google.');
+      setServerError(
+        err?.response?.data?.message || err?.message || 'Erreur lors de la connexion Google.',
+      );
     } finally {
       setOAuthLoading(false);
     }
@@ -152,6 +135,11 @@ export default function SignInCard() {
       >
         Sign in
       </Typography>
+      {registrationSuccess && (
+        <Typography color="success.main" variant="body2" sx={{ textAlign: 'center' }}>
+          Account created successfully. Please sign in.
+        </Typography>
+      )}
       <Box
         component="form"
         onSubmit={handleSubmit}

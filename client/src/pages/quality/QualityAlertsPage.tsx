@@ -276,24 +276,67 @@ export default function QualityAlertsPage() {
       >
         <DialogTitle sx={{ fontWeight: 900 }}>Ajouter une action corrective</DialogTitle>
         <DialogContent sx={{ pt: 2 }}>
-          <Stack spacing={2}>
-            <TextField
-              label="Description"
-              value={actionDescription}
-              onChange={(e) => setActionDescription(e.target.value)}
-              multiline
-              minRows={3}
-              required
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
-            <TextField
-              label="Resultat (optionnel)"
-              value={actionResult}
-              onChange={(e) => setActionResult(e.target.value)}
-              multiline
-              minRows={2}
-              sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
+          <Stack spacing={2.5}>
+            <Stack spacing={0.8}>
+              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, letterSpacing: 0.4 }}>
+                Description <span style={{ color: '#f87171' }}>*</span>
+              </Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Décrivez l'action corrective..."
+                value={actionDescription}
+                onChange={(e) => setActionDescription(e.target.value)}
+                multiline
+                minRows={3}
+                sx={{
+                  '& .MuiInputBase-inputMultiline': { color: '#f8fafc' },
+                  '& .MuiInputBase-inputMultiline::placeholder': { color: '#475569', opacity: 1 },
+                }}
+                slotProps={{
+                  input: {
+                    sx: {
+                      height: 'auto',
+                      borderRadius: 2,
+                      backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(99,130,180,0.35)' },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#60a5fa' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#60a5fa', borderWidth: 2 },
+                    },
+                  },
+                }}
+              />
+            </Stack>
+            <Stack spacing={0.8}>
+              <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, letterSpacing: 0.4 }}>
+                Résultat <span style={{ color: '#64748b' }}>(optionnel)</span>
+              </Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Résultat attendu ou observé..."
+                value={actionResult}
+                onChange={(e) => setActionResult(e.target.value)}
+                multiline
+                minRows={2}
+                sx={{
+                  '& .MuiInputBase-inputMultiline': { color: '#f8fafc' },
+                  '& .MuiInputBase-inputMultiline::placeholder': { color: '#475569', opacity: 1 },
+                }}
+                slotProps={{
+                  input: {
+                    sx: {
+                      height: 'auto',
+                      borderRadius: 2,
+                      backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(99,130,180,0.35)' },
+                      '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#60a5fa' },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: '#60a5fa', borderWidth: 2 },
+                    },
+                  },
+                }}
+              />
+            </Stack>
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>

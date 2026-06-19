@@ -18,10 +18,10 @@ import { styled } from '@mui/material/styles';
 import AppTheme from '../../theme/AppTheme';
 import ColorModeSelect from '../../theme/ColorModeSelect';
 import { GoogleIcon } from '../CustomIcons';
-import { useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { api } from '../../api/http';
 import { useAuth } from '../../context/AuthContext';
-import { ensureGoogleSdk } from '../../utils/oauthSdk';
+import { ensureGoogleSdk, requestGoogleCredential } from '../../utils/oauthSdk';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -141,19 +141,14 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
     setLoading(true);
 
     try {
-      const email = String(data.get('email') || '');
-      const password = String(data.get('password') || '');
-
       await api.post('/auth/register', {
         fullName: data.get('name'),
-        email,
-        password,
+        email: data.get('email'),
+        password: data.get('password'),
         role,
       });
 
-      // Keep one auth source of truth through AuthContext
-      await login(email, password);
-      navigate('/');
+      navigate('/signin?registered=1');
     } catch (err: any) {
       const msg = err?.response?.data?.message || 'Erreur lors de l\'inscription.';
       setServerError(msg);
@@ -181,33 +176,16 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
         return;
       }
 
-      const credential = await new Promise<string>((resolve, reject) => {
-        let settled = false;
-        google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: (response: any) => {
-            settled = true;
-            if (response?.credential) {
-              resolve(response.credential);
-              return;
-            }
-            reject(new Error('Aucun ID token Google recu.'));
-          },
-        });
-
-        google.accounts.id.prompt();
-
-        window.setTimeout(() => {
-          if (!settled) {
-            reject(new Error('Google Sign-In indisponible sur ce navigateur.'));
-          }
-        }, 10000);
-      });
+      const credential = await requestGoogleCredential(googleClientId);
 
       await loginWithGoogle(credential, role || undefined);
       navigate('/');
-    } catch (_err: any) {
-      setServerError('Erreur lors de l\'inscription Google.');
+    } catch (err: any) {
+      setServerError(
+        err?.response?.data?.message ||
+          err?.message ||
+          'Erreur lors de l\'inscription Google.',
+      );
     } finally {
       setOAuthLoading(false);
     }
@@ -340,7 +318,8 @@ export default function SignUp(props: { disableCustomTheme?: boolean }) {
             <Typography sx={{ textAlign: 'center' }}>
               Already have an account?{' '}
               <Link
-                href="/signin"
+                component={RouterLink}
+                to="/signin"
                 variant="body2"
                 sx={{ alignSelf: 'center' }}
               >

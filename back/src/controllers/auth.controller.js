@@ -349,10 +349,14 @@ export const createUser = async (req, res, next) => {
 
 export const updateUser = async (req, res, next) => {
   try {
-    const { fullName, role, isActive } = req.body;
+    const { fullName, role, isActive, email } = req.body;
 
     if (role && !ALLOWED_ROLES.includes(role)) {
       return res.status(400).json({ success: false, message: 'Rôle invalide.' });
+    }
+
+    if (email !== undefined && !String(email).trim()) {
+      return res.status(400).json({ success: false, message: 'Email invalide.' });
     }
 
     // Prevent manager from deactivating or demoting themselves
@@ -375,6 +379,19 @@ export const updateUser = async (req, res, next) => {
     if (fullName !== undefined) updates.fullName = fullName;
     if (role !== undefined) updates.role = role;
     if (isActive !== undefined) updates.isActive = isActive;
+    if (email !== undefined) {
+      const existing = await User.findOne({
+        email: String(email).toLowerCase(),
+        _id: { $ne: req.params.id },
+      });
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: 'Un utilisateur avec cet email existe déjà.',
+        });
+      }
+      updates.email = String(email).toLowerCase();
+    }
 
     const user = await User.findByIdAndUpdate(req.params.id, updates, {
       new: true,

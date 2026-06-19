@@ -1,5 +1,13 @@
 const LOCAL_ORIGINS = ['http://localhost:5173'];
-const VERCEL_PREVIEW_REGEX = /^https:\/\/process-monitoring-app-hhh8(?:-[a-z0-9-]+)?\.vercel\.app$/i;
+
+const isLocalDevelopmentOrigin = (origin) => {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+  } catch (_error) {
+    return false;
+  }
+};
 
 const splitOrigins = (value) =>
   String(value || '')
@@ -17,7 +25,7 @@ export const corsOrigin = (origin, callback) => {
   const allowedOrigins = getAllowedOrigins();
 
   // Requests like curl/postman may have no origin header.
-  if (!origin || allowedOrigins.includes(origin) || VERCEL_PREVIEW_REGEX.test(origin)) {
+  if (!origin || allowedOrigins.includes(origin) || isLocalDevelopmentOrigin(origin)) {
     callback(null, true);
     return;
   }
